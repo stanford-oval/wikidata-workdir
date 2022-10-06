@@ -244,11 +244,9 @@ evaluate-output-artifacts:
 	done
 	echo $(genie_k8s_owner)/workdir/$(genie_k8s_project)/$(eval_set)/$(if $(findstring /,$(model)),$(dir $(model)),)$(artifacts_ver)/ > $(s3_metrics_output)
 	cp -r $(eval_set)/$(model)* $(metrics_output)
-	if [[ "$(eval_metric)" == "query" ]] ; then \
-		python3 write_ui_metrics_outputs.py $(eval_set)/$(model).results ; \
-	fi
+	python3 write_ui_metrics_outputs.py $(eval_set)/$(model).results 
 
 clean:
 	rm -rf *.tmp qald7 qald9
 	rm -rf test/annotated.tsv eval/annotated.tsv
-	rm -rf datadir synthetic* parameter-datasets parameter-datasets.tsv *.tt *.json *.tsv 
+	rm -rf datadir synthetic* parameter-datasets parameter-datasets.tsv *.tt *.json *.tsv

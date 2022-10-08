@@ -181,11 +181,11 @@ test/annotated.tsv: test-converted.tsv
 
 eval-synthetic/annotated.tsv: synthetic-d$(maxdepth)-eval-augmented.tsv
 	mkdir -p eval-synthetic
-	mv $^ $@
+	shuf $^ | head -100 > $@
 
 test-synthetic/annotated.tsv: synthetic-d$(maxdepth)-test-augmented.tsv
 	mkdir -p test-synthetic
-	mv $^ $@
+	shuf $^ | head -100 > $@
 
 # augment fewshot and synthetic data
 everything.tsv: $(if $(findstring true,$(fewshot)),fewshot-augmented.tsv,) $(if $(findstring true,$(synthetic)),synthetic-augmented.tsv,) 

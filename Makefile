@@ -82,11 +82,6 @@ manifest.tt: $(qalddir) $(wikidata_cache) $(bootleg)
 	mkdir -p $(experiment) 
 	cp entities.json $(experiment)/entities.json
 
-# sample constants
-constants.tsv: manifest.tt
-	$(genie) sample-constants -o $@ --thingpedia manifest.tt --parameter-datasets parameter-datasets.tsv 
-	cat $(geniedir)/data/en-US/constants.tsv >> $@
-
 # synthesize data with depth d
 synthetic-d%.tsv: manifest.tt $(dataset_file)
 	$(genie) generate \
@@ -94,6 +89,33 @@ synthetic-d%.tsv: manifest.tt $(dataset_file)
 		--target-pruning-size $(pruning_size) \
 		-o $@.tmp $(generate_flags) --maxdepth $$(echo $* | cut -f1 -d'-') --random-seed $@ --debug 3
 	mv $@.tmp $@
+
+# augment synthetic data 
+augmented-d%.tsv: manifest.tt synthetic-d%.tsv
+	$(genie) augment \
+		-o $@.tmp \
+		-l en-US \
+		--thingpedia manifest.tt \
+		--parameter-datasets parameter-datasets.tsv \
+		--synthetic-expand-factor 1 \
+		--quoted-paraphrasing-expand-factor 60 \
+		--no-quote-paraphrasing-expand-factor 20 \
+		--quoted-fraction 0.0 \
+		--debug \
+		--no-requotable \
+		--include-entity-value \
+		--exclude-entity-display \
+		synthetic-d$*.tsv
+	node $(qalddir)/dist/lib/post-processor.js \
+		--thingpedia manifest.tt \
+		--include-entity-value \
+		--exclude-entity-display \
+		--bootleg-db $(bootleg) \
+		--cache $(wikidata_cache) \
+		$(normalization_options) \
+		-i $@.tmp \
+		-o $@
+	rm $@.tmp
 
 # merge synthetic data
 synthetic.tsv: $(foreach v,$(shell seq 1 1 $(mindepth_count)),synthetic-d$(mindepth)-$(v).tsv) $(foreach v,$(shell seq 1 1 $(maxdepth_count)),synthetic-d$(maxdepth)-$(v).tsv)
@@ -150,6 +172,28 @@ test/annotated.tsv: test-converted.tsv
 	mkdir -p test
 	mv test-converted.tsv $@
 
+eval-synthetic/annotated.tsv: augmented-d$(maxdepth)-eval.tsv
+	mkdir -p eval-synthetic
+	$(genie) typecheck $^\
+		-o $@.tmp \
+		--dropped fewshot-dropped.tsv \
+		--thingpedia manifest.tt \
+		--include-entity-value \
+		--exclude-entity-display
+	shuf $@.tmp | head -100 > $@
+	rm $@.tmp
+
+test-synthetic/annotated.tsv: augmented-d$(maxdepth)-test.tsv
+	mkdir -p test-synthetic
+	$(genie) typecheck $^\
+		-o $@.tmp \
+		--dropped fewshot-dropped.tsv \
+		--thingpedia manifest.tt \
+		--include-entity-value \
+		--exclude-entity-display
+	shuf $@.tmp | head -100 > $@
+	rm $@.tmp
+
 # augment fewshot and synthetic data
 everything.tsv: synthetic.tsv fewshot.tsv
 	$(genie) augment \
@@ -178,12 +222,12 @@ everything.tsv: synthetic.tsv fewshot.tsv
 	rm $@.tmp
 
 # final data directory, putting train, eval and test together 
-datadir: eval/annotated.tsv test/annotated.tsv everything.tsv
+datadir: $(if $(findstring true,$(synthetic_test)),eval-synthetic/annotated.tsv test-synthetic/annotated.tsv,eval/annotated.tsv test/annotated.tsv) everything.tsv
 	mkdir -p $@
-	cp eval/annotated.tsv $@/eval.tsv
 	cp manifest.tt $@/manifest.tt
 	cp everything.tsv $@/train.tsv
-	cp test/annotated.tsv $@/test.tsv 
+	cp $(if $(findstring true,$(synthetic_test)),eval-synthetic/annotated.tsv,eval/annotated.tsv) $@/eval.tsv
+	cp $(if $(findstring true,$(synthetic_test)),test-synthetic/annotated.tsv,test/annotated.tsv) $@/test.tsv 
 	touch $@
 
 # download model from azure
@@ -198,7 +242,7 @@ models/%/best.pth:
 		azcopy sync --recursive --exclude-pattern "*/dataset/*;*/cache/*;iteration_*.pth;*_optim.pth" ${s3_bucket}/$(s3_model_dir) models/$*/ ; \
 	fi
 
-# copy manifest for debugging 
+# save manifest in experiment folder for debugging 
 $(experiment)/manifest.tt: manifest.tt
 	cp manifest.tt $@
 

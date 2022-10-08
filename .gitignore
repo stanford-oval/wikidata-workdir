@@ -6,6 +6,8 @@ qald9
 parameter-datasets
 eval
 test
+eval-synthetic
+test-synthetic
 datadir
 models
 
@@ -15,6 +17,7 @@ entities.json
 parameter-datasets.tsv
 
 synthetic*.tsv
+augmented*.tsv
 fewshot.tsv
 everything.tsv
 *-dropped.tsv

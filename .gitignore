@@ -1,6 +1,8 @@
 config.mk
 
 qald
+qald7
+qald9
 parameter-datasets
 eval
 test

@@ -19,7 +19,6 @@ domains ?= all
 qald_version ?= main
 dataset_file = emptydataset.tt
 type_system ?= 'hierarchical'
-exclude_entity_display ?= true
 synthetic_flags ?= \
 	projection_with_filter \
 	projection \
@@ -32,14 +31,20 @@ synthetic_flags ?= \
 generate_flags = $(foreach v,$(synthetic_flags),--set-flag $(v))
 normalization_options ?= --normalize-domains id-filtered-only --normalize-entity-types
 
-pruning_size ?= 50
+pruning_size ?= 5
 maxdepth ?= 8
 mindepth ?= 6
 maxdepth_count ?= 1
-mindepth_count ?= 3
+mindepth_count ?= 1
 
 wikidata_cache = $(qalddir)/wikidata_cache.sqlite
 bootleg =$(qalddir)/bootleg.sqlite
+
+# ablation settings
+synthetic_size ?= 
+fewshot ?= true
+synthetic_test ?= false
+metric ?= query
 
 .PHONY: clean
 .SECONDARY:
@@ -56,6 +61,7 @@ $(bootleg):
 emptydataset.tt:
 	echo 'dataset @empty {}' > $@
 
+# generate manifest
 manifest.tt: $(qalddir) $(wikidata_cache) $(bootleg)
 	mkdir -p parameter-datasets ; \
 	node $(qalddir)/dist/lib/manifest-generator.js \
@@ -76,10 +82,12 @@ manifest.tt: $(qalddir) $(wikidata_cache) $(bootleg)
 	mkdir -p $(experiment) 
 	cp entities.json $(experiment)/entities.json
 
+# sample constants
 constants.tsv: manifest.tt
 	$(genie) sample-constants -o $@ --thingpedia manifest.tt --parameter-datasets parameter-datasets.tsv 
 	cat $(geniedir)/data/en-US/constants.tsv >> $@
 
+# synthesize data with depth d
 synthetic-d%.tsv: manifest.tt $(dataset_file)
 	$(genie) generate \
 		--thingpedia manifest.tt --entities entities.json --dataset $(dataset_file) \
@@ -87,41 +95,29 @@ synthetic-d%.tsv: manifest.tt $(dataset_file)
 		-o $@.tmp $(generate_flags) --maxdepth $$(echo $* | cut -f1 -d'-') --random-seed $@ --debug 3
 	mv $@.tmp $@
 
-synthetic.tsv : $(foreach v,$(shell seq 1 1 $(mindepth_count)),synthetic-d$(mindepth)-$(v).tsv) $(foreach v,$(shell seq 1 1 $(maxdepth_count)),synthetic-d$(maxdepth)-$(v).tsv)
+# merge synthetic data
+synthetic.tsv: $(foreach v,$(shell seq 1 1 $(mindepth_count)),synthetic-d$(mindepth)-$(v).tsv) $(foreach v,$(shell seq 1 1 $(maxdepth_count)),synthetic-d$(maxdepth)-$(v).tsv)
 	cat $^ > $@
-	
-fewshot.tsv : manifest.tt $(wikidata_cache) $(bootleg)
+
+# prepare raw data for fewshot, eval, and test
+$(experiment)/data: $(qalddir)
+	mkdir -p $@
+	node $(qalddir)/dist/lib/divide.js $(qalddir)/data/$(experiment)/train.json 
+	mv xaa $@/fewshot.json
+	mv xab $@/eval.json
+	cp $(qalddir)/data/$(experiment)/test.json $@/test.json
+
+# convert raw data into thingtalk
+%-converted.tsv: manifest.tt $(wikidata_cache) $(bootleg) $(experiment)/data
 	node $(qalddir)/dist/lib/converter/index.js \
-		-i $(qalddir)/data/$(experiment)/train.json\
+		-i $(experiment)/data/$*.json\
 		--manifest manifest.tt \
 		--cache $(wikidata_cache) \
+		--bootleg-db $(bootleg) \
 		--save-cache \
 		-d fewshot-dropped.tsv \
 		-o $@.tmp \
-		--bootleg-db $(bootleg)
-	$(genie) typecheck $@.tmp\
-		-o $@.tmp2 \
-		--dropped fewshot-dropped.tsv \
-		--thingpedia manifest.tt \
-		--include-entity-value \
-		$(if $(findstring true,$(exclude_entity_display)),--exclude-entity-display,) 
-	$(genie) requote $@.tmp2 \
-		-o $@ \
-		--skip-errors 
-	rm $@.tmp*
-
-eval/annotated.tsv: manifest.tt $(wikidata_cache) $(bootleg) $(dataset_file)
-	mkdir -p eval
-	node $(qalddir)/dist/lib/converter/index.js \
-		--manifest manifest.tt \
-		--cache $(wikidata_cache) \
-		--save-cache \
-		-i $(qalddir)/data/$(experiment)/test.json \
-		-d test-dropped.tsv \
-		-o $@.tmp \
-		--include-entity-value \
-		--exclude-entity-display \
-		--bootleg-db $(bootleg)
+		$(if $(findstring fewshot,$*),,--exclude-entity-display --include-entity-value)
 	node $(qalddir)/dist/lib/post-processor.js \
 		--thingpedia manifest.tt \
 		--include-entity-value \
@@ -130,13 +126,31 @@ eval/annotated.tsv: manifest.tt $(wikidata_cache) $(bootleg) $(dataset_file)
 		--cache $(wikidata_cache) \
 		$(normalization_options) \
 		-i $@.tmp \
-		-o $@
-	rm $@.tmp
+		-o $@.tmp2
+	$(genie) typecheck $@.tmp2\
+		-o $@ \
+		--dropped fewshot-dropped.tsv \
+		--thingpedia manifest.tt \
+		--include-entity-value \
+		--exclude-entity-display 
+	rm $@.tmp*
 
-test/annotated.tsv : eval/annotated.tsv
+# prepare converted fewshot data
+fewshot.tsv: fewshot-converted.tsv
+	$(genie) requote fewshot-converted.tsv -o $@ --skip-errors 
+	rm fewshot-converted.tsv
+
+# prepare converted eval data
+eval/annotated.tsv: eval-converted.tsv
+	mkdir -p eval
+	mv eval-converted.tsv $@
+
+# prepare converted test data
+test/annotated.tsv: test-converted.tsv 
 	mkdir -p test
-	cp eval/annotated.tsv $@
+	mv test-converted.tsv $@
 
+# augment fewshot and synthetic data
 everything.tsv: synthetic.tsv fewshot.tsv
 	$(genie) augment \
 		-o $@.tmp \
@@ -163,6 +177,7 @@ everything.tsv: synthetic.tsv fewshot.tsv
 		-o $@ 
 	rm $@.tmp
 
+# final data directory, putting train, eval and test together 
 datadir: eval/annotated.tsv test/annotated.tsv everything.tsv
 	mkdir -p $@
 	cp eval/annotated.tsv $@/eval.tsv
@@ -171,53 +186,23 @@ datadir: eval/annotated.tsv test/annotated.tsv everything.tsv
 	cp test/annotated.tsv $@/test.tsv 
 	touch $@
 
-train_postprocessed.tsv: bootleg-types.json
-	mkdir -p postprocessed
-	mkdir -p bootlegdir_postprocessed/train_bootleg/bootleg_wiki/
-	$(genie) wikidata-postprocess-data \
-	  --thingpedia manifest.tt \
-	  --entities entities.json \
-	  --bootleg-types bootleg-types.json \
-	  --bootleg-type-canonicals bootleg-type-canonicals.json \
-	  --bootleg-output bootlegdir/train_bootleg/bootleg_wiki/bootleg_labels.jsonl \
-	  --updated-examples $@ \
-	  --updated-bootleg-output bootlegdir_postprocessed/train_bootleg/bootleg_wiki/bootleg_labels.jsonl \
-	  datadir/train.tsv
-
-eval_postprocessed.tsv: bootleg-types.json
-	mkdir -p postprocessed
-	mkdir -p bootlegdir_postprocessed/eval_bootleg/bootleg_wiki/
-	$(genie) wikidata-postprocess-data \
-	  --thingpedia manifest.tt \
-	  --entities entities.json \
-	  --bootleg-types bootleg-types.json \
-	  --bootleg-type-canonicals bootleg-type-canonicals.json \
-	  --bootleg-output bootlegdir/eval_bootleg/bootleg_wiki/bootleg_labels.jsonl \
-	  --updated-examples $@ \
-	  --updated-bootleg-output bootlegdir_postprocessed/eval_bootleg/bootleg_wiki/bootleg_labels.jsonl \
-	  datadir/eval.tsv
-	
-datadir_postprocessed: train_postprocessed.tsv eval_postprocessed.tsv
-	mkdir -p $@
-	cp train_postprocessed.tsv $@/train.tsv
-	cp eval_postprocessed.tsv $@/eval.tsv
-	cp datadir/eval.tsv $@/test.tsv
-	touch $@
-
+# download model from azure
 models/%/best.pth:
 	mkdir -p models/$*/
 	if test -z "$(s3_model_dir)" ; then \
-	  echo "s3_model_dir is empty" ; \
-	  azcopy sync --recursive --exclude-pattern "*/dataset/*;*/cache/*;iteration_*.pth;*_optim.pth" ${s3_bucket}/$(if $(findstring /,$*),$(dir $*),$(owner)/)models/${project}/$(notdir $*)/ models/$*/ ; \
+		echo "s3_model_dir is empty" ; \
+			azcopy sync --recursive --exclude-pattern "*/dataset/*;*/cache/*;iteration_*.pth;*_optim.pth" ${s3_bucket}/$(if $(findstring /,$*),$(dir $*),$(owner)/)models/${project}/$(notdir $*)/ models/$*/ ; \
 	else \
-	  echo "s3_model_dir is not empty" ; \
-	  echo models/$*/ ; \
-	  azcopy sync --recursive --exclude-pattern "*/dataset/*;*/cache/*;iteration_*.pth;*_optim.pth" ${s3_bucket}/$(s3_model_dir) models/$*/ ; \
+		echo "s3_model_dir is not empty" ; \
+		echo models/$*/ ; \
+		azcopy sync --recursive --exclude-pattern "*/dataset/*;*/cache/*;iteration_*.pth;*_optim.pth" ${s3_bucket}/$(s3_model_dir) models/$*/ ; \
 	fi
 
+# copy manifest for debugging 
 $(experiment)/manifest.tt: manifest.tt
 	cp manifest.tt $@
 
+# evaluation
 $(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated.tsv $(experiment)/manifest.tt 
 	mkdir -p $(eval_set)/$(dir $*)
 	GENIENLP_NUM_BEAMS=$(beam_size) $(genie) evaluate-server $(eval_set)/annotated.tsv \
@@ -236,16 +221,18 @@ $(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated.tsv $(experiment)
 evaluate: $(eval_set)/$(model).results
 	@for f in $^ ; do echo $$f ; cat $$f ; done
 
+# generate kubeflow visualization
 evaluate-output-artifacts:
 	mkdir -p `dirname $(s3_metrics_output)`
 	mkdir -p $(metrics_output)
 	for f in {results,debug} ; do \
-	  azcopy cp $(eval_set)/$(model).$$f $(s3_bucket)/$(genie_k8s_owner)/workdir/$(genie_k8s_project)/$(eval_set)/$(if $(findstring /,$(model)),$(dir $(model)),)$(artifacts_ver)/ ; \
+		azcopy cp $(eval_set)/$(model).$$f $(s3_bucket)/$(genie_k8s_owner)/workdir/$(genie_k8s_project)/$(eval_set)/$(if $(findstring /,$(model)),$(dir $(model)),)$(artifacts_ver)/ ; \
 	done
 	echo $(genie_k8s_owner)/workdir/$(genie_k8s_project)/$(eval_set)/$(if $(findstring /,$(model)),$(dir $(model)),)$(artifacts_ver)/ > $(s3_metrics_output)
 	cp -r $(eval_set)/$(model)* $(metrics_output)
 	python3 write_ui_metrics_outputs.py $(eval_set)/$(model).results 
 
+# clean up workdir, restart
 clean:
 	rm -rf *.tmp qald7 qald9
 	rm -rf test/annotated.tsv eval/annotated.tsv

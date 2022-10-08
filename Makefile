@@ -40,9 +40,10 @@ mindepth_count ?= 1
 wikidata_cache = $(qalddir)/wikidata_cache.sqlite
 bootleg =$(qalddir)/bootleg.sqlite
 
-# ablation settings
-synthetic_size ?= 
+# ablation settings 
 fewshot ?= true
+synthetic ?= true
+synthetic_size ?=
 synthetic_test ?= false
 metric ?= query
 
@@ -60,6 +61,14 @@ $(bootleg):
 
 emptydataset.tt:
 	echo 'dataset @empty {}' > $@
+
+# prepare raw data for fewshot, eval, and test
+$(experiment)/data: $(qalddir)
+	mkdir -p $@
+	node $(qalddir)/dist/lib/divide.js $(qalddir)/data/$(experiment)/train.json 
+	mv xaa $@/fewshot.json
+	mv xab $@/eval.json
+	cp $(qalddir)/data/$(experiment)/test.json $@/test.json
 
 # generate manifest
 manifest.tt: $(qalddir) $(wikidata_cache) $(bootleg)
@@ -90,8 +99,12 @@ synthetic-d%.tsv: manifest.tt $(dataset_file)
 		-o $@.tmp $(generate_flags) --maxdepth $$(echo $* | cut -f1 -d'-') --random-seed $@ --debug 3
 	mv $@.tmp $@
 
-# augment synthetic data 
-augmented-d%.tsv: manifest.tt synthetic-d%.tsv
+# merge synthetic data
+synthetic.tsv: $(foreach v,$(shell seq 1 1 $(mindepth_count)),synthetic-d$(mindepth)-$(v).tsv) $(foreach v,$(shell seq 1 1 $(maxdepth_count)),synthetic-d$(maxdepth)-$(v).tsv)
+	cat $^ > $@
+
+# augment data 
+%-augmented.tsv: $(qalddir) manifest.tt %.tsv
 	$(genie) augment \
 		-o $@.tmp \
 		-l en-US \
@@ -105,7 +118,7 @@ augmented-d%.tsv: manifest.tt synthetic-d%.tsv
 		--no-requotable \
 		--include-entity-value \
 		--exclude-entity-display \
-		synthetic-d$*.tsv
+		$*.tsv
 	node $(qalddir)/dist/lib/post-processor.js \
 		--thingpedia manifest.tt \
 		--include-entity-value \
@@ -114,20 +127,14 @@ augmented-d%.tsv: manifest.tt synthetic-d%.tsv
 		--cache $(wikidata_cache) \
 		$(normalization_options) \
 		-i $@.tmp \
-		-o $@
-	rm $@.tmp
-
-# merge synthetic data
-synthetic.tsv: $(foreach v,$(shell seq 1 1 $(mindepth_count)),synthetic-d$(mindepth)-$(v).tsv) $(foreach v,$(shell seq 1 1 $(maxdepth_count)),synthetic-d$(maxdepth)-$(v).tsv)
-	cat $^ > $@
-
-# prepare raw data for fewshot, eval, and test
-$(experiment)/data: $(qalddir)
-	mkdir -p $@
-	node $(qalddir)/dist/lib/divide.js $(qalddir)/data/$(experiment)/train.json 
-	mv xaa $@/fewshot.json
-	mv xab $@/eval.json
-	cp $(qalddir)/data/$(experiment)/test.json $@/test.json
+		-o $@.tmp2
+	$(genie) typecheck $@.tmp2\
+		-o $@ \
+		--dropped fewshot-dropped.tsv \
+		--thingpedia manifest.tt \
+		--include-entity-value \
+		--exclude-entity-display 
+	rm $@.tmp*
 
 # convert raw data into thingtalk
 %-converted.tsv: manifest.tt $(wikidata_cache) $(bootleg) $(experiment)/data
@@ -172,54 +179,21 @@ test/annotated.tsv: test-converted.tsv
 	mkdir -p test
 	mv test-converted.tsv $@
 
-eval-synthetic/annotated.tsv: augmented-d$(maxdepth)-eval.tsv
+eval-synthetic/annotated.tsv: synthetic-d$(maxdepth)-eval-augmented.tsv
 	mkdir -p eval-synthetic
-	$(genie) typecheck $^\
-		-o $@.tmp \
-		--dropped fewshot-dropped.tsv \
-		--thingpedia manifest.tt \
-		--include-entity-value \
-		--exclude-entity-display
-	shuf $@.tmp | head -100 > $@
-	rm $@.tmp
+	mv $^ $@
 
-test-synthetic/annotated.tsv: augmented-d$(maxdepth)-test.tsv
+test-synthetic/annotated.tsv: synthetic-d$(maxdepth)-test-augmented.tsv
 	mkdir -p test-synthetic
-	$(genie) typecheck $^\
-		-o $@.tmp \
-		--dropped fewshot-dropped.tsv \
-		--thingpedia manifest.tt \
-		--include-entity-value \
-		--exclude-entity-display
-	shuf $@.tmp | head -100 > $@
-	rm $@.tmp
+	mv $^ $@
 
 # augment fewshot and synthetic data
-everything.tsv: synthetic.tsv fewshot.tsv
-	$(genie) augment \
-		-o $@.tmp \
-		-l en-US \
-		--thingpedia manifest.tt \
-		--parameter-datasets parameter-datasets.tsv \
-		--synthetic-expand-factor 1 \
-		--quoted-paraphrasing-expand-factor 60 \
-		--no-quote-paraphrasing-expand-factor 20 \
-		--quoted-fraction 0.0 \
-		--debug \
-		--no-requotable \
-		--include-entity-value \
-		--exclude-entity-display \
-		fewshot.tsv synthetic.tsv
-	node $(qalddir)/dist/lib/post-processor.js \
-		--thingpedia manifest.tt \
-		--include-entity-value \
-		--exclude-entity-display \
-		--bootleg-db $(bootleg) \
-		--cache $(wikidata_cache) \
-		$(normalization_options) \
-		-i $@.tmp \
-		-o $@ 
-	rm $@.tmp
+everything.tsv: $(if $(findstring true,$(fewshot)),fewshot-augmented.tsv,) $(if $(findstring true,$(synthetic)),synthetic-augmented.tsv,) 
+	if [[ -n "$(synthetic_size)" ]] ; then \
+		shuf synthetic-augmented.tsv | head -$(synthetic_size) > synthetic-augmented.tsv.tmp ; \
+		mv synthetic-augmented.tsv.tmp synthetic-augmented.tsv ; \
+	fi
+	cat $^ > $@
 
 # final data directory, putting train, eval and test together 
 datadir: $(if $(findstring true,$(synthetic_test)),eval-synthetic/annotated.tsv test-synthetic/annotated.tsv,eval/annotated.tsv test/annotated.tsv) everything.tsv
@@ -249,18 +223,53 @@ $(experiment)/manifest.tt: manifest.tt
 # evaluation
 $(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated.tsv $(experiment)/manifest.tt 
 	mkdir -p $(eval_set)/$(dir $*)
-	GENIENLP_NUM_BEAMS=$(beam_size) $(genie) evaluate-server $(eval_set)/annotated.tsv \
-		--url "file://$(abspath $(dir $<))" \
-		--thingpedia $(experiment)/manifest.tt \
-		--debug \
-		--csv-prefix $(eval_set) \
-		--csv $(evalflags) \
-		--min-complexity 1 --max-complexity 3 \
-		--include-entity-value \
-		--exclude-entity-display \
-		--ignore-entity-type \
-		-o $@.tmp | tee $(eval_set)/$*.debug
-	mv $@.tmp $@ 
+	if [[ "$(metric)" == "query" ]] ; then \
+		GENIENLP_NUM_BEAMS=$(beam_size) $(genie) evaluate-server $(eval_set)/annotated.tsv \
+			--url "file://$(abspath $(dir $<))" \
+			--thingpedia $(experiment)/manifest.tt \
+			--debug \
+			--csv-prefix $(eval_set) \
+			--csv $(evalflags) \
+			--min-complexity 1 --max-complexity 3 \
+			--include-entity-value \
+			--exclude-entity-display \
+			--ignore-entity-type \
+			-o $@.tmp | tee $(eval_set)/$*.debug; \
+		mv $@.tmp $@ ; \
+	else \
+		GENIENLP_NUM_BEAMS=$(beam_size) $(genie) predict $(eval_set)/annotated.tsv \
+			--url "file://$(abspath $(dir $<))" \
+			--debug \
+			--csv \
+			-o predictions-thingtalk.tsv | tee $(eval_set)/$*.debug; \
+		node $(qalddir)/dist/lib/converter/index.js \
+			--direction from-thingtalk \
+			-i predictions-thingtalk.tsv \
+			--cache $(wikidata_cache) \
+			--bootleg-db $(bootleg) \
+			-o gold-sparql.tsv \
+			--manifest $(experiment)/manifest.tt \
+			--domains parameter-datasets/domain.json \
+			--include-entity-value \
+			--exclude-entity-display ;\
+		node $(qalddir)/dist/lib/converter/index.js \
+			--direction from-thingtalk \
+			-i predictions-thingtalk.tsv \
+			-o predictions-sparql.tsv \
+			--cache $(wikidata_cache) \
+			--bootleg-db $(bootleg) \
+			--prediction \
+			--manifest $(experiment)/manifest.tt \
+			--domains parameter-datasets/domain.json \
+			--include-entity-value \
+			--exclude-entity-display ;\
+		node $(qalddir)/dist/lib/evaluate.js \
+			--from-thingtalk \
+			--cache $(wikidata_cache) \
+			--bootleg-db $(bootleg) \
+			--dataset gold-sparql.tsv \
+			--prediction predictions-sparql.tsv > $@ ; \
+	fi 
 
 evaluate: $(eval_set)/$(model).results
 	@for f in $^ ; do echo $$f ; cat $$f ; done
@@ -274,10 +283,20 @@ evaluate-output-artifacts:
 	done
 	echo $(genie_k8s_owner)/workdir/$(genie_k8s_project)/$(eval_set)/$(if $(findstring /,$(model)),$(dir $(model)),)$(artifacts_ver)/ > $(s3_metrics_output)
 	cp -r $(eval_set)/$(model)* $(metrics_output)
-	python3 write_ui_metrics_outputs.py $(eval_set)/$(model).results 
+	if [[ "$(metric)" == "query" ]] ; then \
+		python3 write_ui_metrics_outputs.py $(eval_set)/$(model).results ; \
+	fi 
 
-# clean up workdir, restart
+# clean up data generated, but keeps manifest
+clean-data:
+	rm -rf qald7 qald9
+	rm -rf datadir eval test eval-synthetic test-synthetic
+	rm -rf synthetic* fewshot* *augmented.tsv everything.tsv *.tmp*
+
+# clean up workdir entirely, restart
 clean:
-	rm -rf *.tmp qald7 qald9
-	rm -rf test/annotated.tsv eval/annotated.tsv
-	rm -rf datadir synthetic* parameter-datasets parameter-datasets.tsv *.tt *.json *.tsv
+	rm -rf qald7 qald9
+	rm -rf datadir eval test eval-synthetic test-synthetic
+	rm -rf synthetic* fewshot* *augmented.tsv everything.tsv
+	rm -rf parameter-datasets 
+	rm -rf *.tt *.json *.tsv *.tmp*

@@ -18,7 +18,7 @@ parameter-datasets.tsv
 
 synthetic*.tsv
 augmented*.tsv
-fewshot.tsv
+fewshot*.tsv
 everything.tsv
 *-dropped.tsv
 *.sqlite

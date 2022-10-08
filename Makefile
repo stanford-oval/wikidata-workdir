@@ -9,7 +9,7 @@ s3_metrics_output ?=
 metrics_output ?=
 artifacts_ver := $(shell date +%s)
 
-memsize := 4500
+memsize := 14000
 genie = node --experimental_worker --max_old_space_size=$(memsize) $(geniedir)/dist/tool/genie.js
 
 owner ?= silei

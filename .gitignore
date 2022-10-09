@@ -22,4 +22,4 @@ fewshot*.tsv
 everything.tsv
 *-dropped.tsv
 *.sqlite
-
+*.tmp*

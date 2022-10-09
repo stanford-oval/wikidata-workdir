@@ -47,7 +47,7 @@ synthetic_size ?=
 synthetic_test ?= false
 metric ?= query
 
-.PHONY: clean
+.PHONY: clean clean-data
 .SECONDARY:
 
 $(qalddir):
@@ -104,7 +104,7 @@ synthetic.tsv: $(foreach v,$(shell seq 1 1 $(mindepth_count)),synthetic-d$(minde
 	cat $^ > $@
 
 # augment data 
-%-augmented.tsv: $(qalddir) manifest.tt %.tsv
+augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 	$(genie) augment \
 		-o $@.tmp \
 		-l en-US \
@@ -179,19 +179,19 @@ test/annotated.tsv: test-converted.tsv
 	mkdir -p test
 	mv test-converted.tsv $@
 
-eval-synthetic/annotated.tsv: synthetic-d$(maxdepth)-eval-augmented.tsv
+eval-synthetic/annotated.tsv: augmented-synthetic-d$(maxdepth)-eval.tsv
 	mkdir -p eval-synthetic
 	shuf $^ | head -100 > $@
 
-test-synthetic/annotated.tsv: synthetic-d$(maxdepth)-test-augmented.tsv
+test-synthetic/annotated.tsv: augmented-synthetic-d$(maxdepth)-test.tsv
 	mkdir -p test-synthetic
 	shuf $^ | head -100 > $@
 
 # augment fewshot and synthetic data
-everything.tsv: $(if $(findstring true,$(fewshot)),fewshot-augmented.tsv,) $(if $(findstring true,$(synthetic)),synthetic-augmented.tsv,) 
+everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if $(findstring true,$(synthetic)),augmented-synthetic.tsv,) 
 	if [[ -n "$(synthetic_size)" ]] ; then \
-		shuf synthetic-augmented.tsv | head -$(synthetic_size) > synthetic-augmented.tsv.tmp ; \
-		mv synthetic-augmented.tsv.tmp synthetic-augmented.tsv ; \
+		shuf augmented-synthetic.tsv | head -$(synthetic_size) > augmented-synthetic.tsv.tmp ; \
+		mv augmented-synthetic.tsv.tmp augmented-synthetic.tsv ; \
 	fi
 	cat $^ > $@
 
@@ -291,12 +291,12 @@ evaluate-output-artifacts:
 clean-data:
 	rm -rf qald7 qald9
 	rm -rf datadir eval test eval-synthetic test-synthetic
-	rm -rf synthetic* fewshot* *augmented.tsv everything.tsv *.tmp*
+	rm -rf synthetic* fewshot* augmented* everything.tsv *.tmp*
 
 # clean up workdir entirely, restart
 clean:
 	rm -rf qald7 qald9
 	rm -rf datadir eval test eval-synthetic test-synthetic
-	rm -rf synthetic* fewshot* *augmented.tsv everything.tsv
+	rm -rf synthetic* fewshot* augmented* everything.tsv
 	rm -rf parameter-datasets 
 	rm -rf *.tt *.json *.tsv *.tmp*

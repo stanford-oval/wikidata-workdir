@@ -118,6 +118,7 @@ augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 		--no-requotable \
 		--include-entity-value \
 		--exclude-entity-display \
+		--skip-errors \
 		$*.tsv
 	node $(qalddir)/dist/lib/post-processor.js \
 		--thingpedia manifest.tt \

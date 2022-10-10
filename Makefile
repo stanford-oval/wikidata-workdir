@@ -203,6 +203,7 @@ datadir: $(if $(findstring true,$(synthetic_test)),eval-synthetic/annotated.tsv 
 	cp everything.tsv $@/train.tsv
 	cp $(if $(findstring true,$(synthetic_test)),eval-synthetic/annotated.tsv,eval/annotated.tsv) $@/eval.tsv
 	cp $(if $(findstring true,$(synthetic_test)),test-synthetic/annotated.tsv,test/annotated.tsv) $@/test.tsv 
+	wc -l datadir/*.tsv
 	touch $@
 
 # download model from azure

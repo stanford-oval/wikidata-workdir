@@ -88,8 +88,6 @@ manifest.tt: $(qalddir) $(wikidata_cache) $(bootleg)
 		--append-manifest \
 		--type tt:short_free_text \
 		-d parameter-datasets 
-	mkdir -p $(experiment) 
-	cp entities.json $(experiment)/entities.json
 
 # synthesize data with depth d
 synthetic-d%.tsv: manifest.tt $(dataset_file)
@@ -200,6 +198,7 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 datadir: $(if $(findstring true,$(synthetic_test)),eval-synthetic/annotated.tsv test-synthetic/annotated.tsv,eval/annotated.tsv test/annotated.tsv) everything.tsv
 	mkdir -p $@
 	cp manifest.tt $@/manifest.tt
+	cp entities.json $@/entities.json
 	cp everything.tsv $@/train.tsv
 	cp $(if $(findstring true,$(synthetic_test)),eval-synthetic/annotated.tsv,eval/annotated.tsv) $@/eval.tsv
 	cp $(if $(findstring true,$(synthetic_test)),test-synthetic/annotated.tsv,test/annotated.tsv) $@/test.tsv 
@@ -218,17 +217,13 @@ models/%/best.pth:
 		azcopy sync --recursive --exclude-pattern "*/dataset/*;*/cache/*;iteration_*.pth;*_optim.pth" ${s3_bucket}/$(s3_model_dir) models/$*/ ; \
 	fi
 
-# save manifest in experiment folder for debugging 
-$(experiment)/manifest.tt: manifest.tt
-	cp manifest.tt $@
-
 # evaluation
-$(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated.tsv $(experiment)/manifest.tt 
+$(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated.tsv manifest.tt 
 	mkdir -p $(eval_set)/$(dir $*)
 	if [[ "$(metric)" == "query" ]] ; then \
 		GENIENLP_NUM_BEAMS=$(beam_size) $(genie) evaluate-server $(eval_set)/annotated.tsv \
 			--url "file://$(abspath $(dir $<))" \
-			--thingpedia $(experiment)/manifest.tt \
+			--thingpedia manifest.tt \
 			--debug \
 			--csv-prefix $(eval_set) \
 			--csv $(evalflags) \
@@ -250,7 +245,7 @@ $(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated.tsv $(experiment)
 			--cache $(wikidata_cache) \
 			--bootleg-db $(bootleg) \
 			-o gold-sparql.tsv \
-			--manifest $(experiment)/manifest.tt \
+			--manifest manifest.tt \
 			--domains parameter-datasets/domain.json \
 			--include-entity-value \
 			--exclude-entity-display ;\
@@ -261,7 +256,7 @@ $(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated.tsv $(experiment)
 			--cache $(wikidata_cache) \
 			--bootleg-db $(bootleg) \
 			--prediction \
-			--manifest $(experiment)/manifest.tt \
+			--manifest manifest.tt \
 			--domains parameter-datasets/domain.json \
 			--include-entity-value \
 			--exclude-entity-display ;\

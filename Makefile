@@ -206,25 +206,6 @@ datadir: $(if $(findstring true,$(synthetic_test)),eval-synthetic/annotated.tsv 
 	wc -l datadir/*.tsv
 	touch $@
 
-%-postprocessed.tsv: 
-	mkdir -p bootlegdir_postprocessed/eval_bootleg/bootleg_wiki/
-	$(genie) wikidata-postprocess-data \
-	  --thingpedia manifest.tt \
-	  --entities entities.json \
-	  --bootleg-types bootleg-types.json \
-	  --bootleg-type-canonicals bootleg-type-canonicals.json \
-	  --bootleg-output bootlegdir/eval_bootleg/bootleg_wiki/bootleg_labels.jsonl \
-	  --updated-examples $@ \
-	  --updated-bootleg-output bootlegdir_postprocessed/eval_bootleg/bootleg_wiki/bootleg_labels.jsonl \
-	  datadir/$*.tsv
-
-datadir-postprocessed:
-	mkdir -p $@
-	cp train_postprocessed.tsv $@/train.tsv
-	cp eval_postprocessed.tsv $@/eval.tsv
-	cp datadir/eval.tsv $@/test.tsv
-	touch $@
-
 # download model from azure
 models/%/best.pth:
 	mkdir -p models/$*/

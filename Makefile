@@ -19,7 +19,6 @@ domains ?= all
 qald_version ?= main
 dataset_file = emptydataset.tt
 type_system ?= 'hierarchical'
-exclude_entity_display ?= true
 synthetic_flags ?= \
 	projection_with_filter \
 	projection \
@@ -169,39 +168,6 @@ datadir: eval/annotated.tsv test/annotated.tsv everything.tsv
 	cp manifest.tt $@/manifest.tt
 	cp everything.tsv $@/train.tsv
 	cp test/annotated.tsv $@/test.tsv 
-	touch $@
-
-train_postprocessed.tsv: bootleg-types.json
-	mkdir -p postprocessed
-	mkdir -p bootlegdir_postprocessed/train_bootleg/bootleg_wiki/
-	$(genie) wikidata-postprocess-data \
-	  --thingpedia manifest.tt \
-	  --entities entities.json \
-	  --bootleg-types bootleg-types.json \
-	  --bootleg-type-canonicals bootleg-type-canonicals.json \
-	  --bootleg-output bootlegdir/train_bootleg/bootleg_wiki/bootleg_labels.jsonl \
-	  --updated-examples $@ \
-	  --updated-bootleg-output bootlegdir_postprocessed/train_bootleg/bootleg_wiki/bootleg_labels.jsonl \
-	  datadir/train.tsv
-
-eval_postprocessed.tsv: bootleg-types.json
-	mkdir -p postprocessed
-	mkdir -p bootlegdir_postprocessed/eval_bootleg/bootleg_wiki/
-	$(genie) wikidata-postprocess-data \
-	  --thingpedia manifest.tt \
-	  --entities entities.json \
-	  --bootleg-types bootleg-types.json \
-	  --bootleg-type-canonicals bootleg-type-canonicals.json \
-	  --bootleg-output bootlegdir/eval_bootleg/bootleg_wiki/bootleg_labels.jsonl \
-	  --updated-examples $@ \
-	  --updated-bootleg-output bootlegdir_postprocessed/eval_bootleg/bootleg_wiki/bootleg_labels.jsonl \
-	  datadir/eval.tsv
-	
-datadir_postprocessed: train_postprocessed.tsv eval_postprocessed.tsv
-	mkdir -p $@
-	cp train_postprocessed.tsv $@/train.tsv
-	cp eval_postprocessed.tsv $@/eval.tsv
-	cp datadir/eval.tsv $@/test.tsv
 	touch $@
 
 models/%/best.pth:

@@ -1,0 +1,7 @@
+{
+  "name": "wd",
+  "main": "index.js",
+  "dependencies": {
+    "qald": "git+https://github.com/rayslxu/qald.git"
+  }
+}

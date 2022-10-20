@@ -23,3 +23,8 @@ everything.tsv
 *-dropped.tsv
 *.sqlite
 *.tmp*
+
+node_modules
+
+demo/genie-server
+demo/.home

@@ -28,3 +28,5 @@ node_modules
 
 demo/genie-server
 demo/.home
+!demo/devices/wd/manifest.tt
+!demo/devices/wd/entities.json

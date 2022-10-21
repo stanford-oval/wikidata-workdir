@@ -32,7 +32,7 @@ ssh oval@wikidata-qa.westus2.cloudapp.azure.com -NfL 8400:localhost:8400
 ```
 
 ## Start Demo
-In `demo` directory, run the following with node 12 or 14:
+Clone this repository and in `demo` directory, run the following with node 12 or 14:
 
 ```bash
 # download necessary files 

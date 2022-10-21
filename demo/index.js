@@ -56,7 +56,21 @@ async function main() {
             console.log('SPARQL:', sparql);
             try {
                 const answers = await wikidata.query(sparql);
-                console.log('Answers:', answers);
+                console.log('Answers:');
+                if (answers.length === 0) {
+                    console.log('None')
+                } else {
+                    for (const answer of answers.slice(0, 5)) {
+                        if (answer.startsWith('Q')) {
+                            const label = await wikidata.getLabel(answer);
+                            console.log(`${label} (${answer})`)
+                        } else {
+                            console.log(answer);
+                        }
+                    } 
+                    if (answers.length > 5)
+                        console.log(`and ${answers.length - 5} more ...`)
+                }
             } catch (e) {
                 console.log('Failed to retrieve answers from Wikidata.')
                 console.log(e.message);

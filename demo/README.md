@@ -26,13 +26,14 @@ Note that the final step will take some time to load. The server is ready when t
 ```
 
 ## Port forward 
-Now the server has started in VM, now you can port forward the server locally. RUn
+Now the server has started in VM, now you can port forward the server locally. Run
 ```bash
 ssh oval@wikidata-qa.westus2.cloudapp.azure.com -NfL 8400:localhost:8400
 ```
 
 ## Start Demo
-Clone this repository and in `demo` directory, run the following with node 12 or 14:
+Now you can start the demo locally. 
+On your local machine, clone this repository and run the following with node 12 or 14:
 
 ```bash
 # clone and get to the demo dir

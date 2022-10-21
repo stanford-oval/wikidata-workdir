@@ -19,6 +19,7 @@ domains ?= all
 qald_version ?= main
 dataset_file = emptydataset.tt
 type_system ?= 'hierarchical'
+exclude_canonical_annotations ?= false
 synthetic_flags ?= \
 	projection_with_filter \
 	projection \
@@ -80,7 +81,8 @@ manifest.tt: $(qalddir) $(wikidata_cache) $(bootleg)
 		--bootleg-db $(bootleg) \
 		--type-system $(type_system) \
 		-o $@ \
-		$(if $(findstring all,$(domains)),,--domains $(domains)) 
+		$(if $(findstring all,$(domains)),,--domains $(domains)) \
+		$(if $(findstring true,$(exclude_canonical_annotations)),--no-canonical-annotations,)
 	$(genie) download-string-values \
 		--thingpedia-url $(thingpedia_url) \
 		--developer-key $(developer_key) \

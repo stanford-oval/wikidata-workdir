@@ -26,7 +26,7 @@ Note that the final step will take some time to load. The server is ready when t
 ```
 
 ## Port forward 
-Now the server has started in VM, now you can port forward the server locally. Run
+Now the server has started in VM, now you can port forward the server locally. On your local machine, run
 ```bash
 ssh oval@wikidata-qa.westus2.cloudapp.azure.com -NfL 8400:localhost:8400
 ```

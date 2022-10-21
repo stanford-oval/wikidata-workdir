@@ -35,6 +35,11 @@ ssh oval@wikidata-qa.westus2.cloudapp.azure.com -NfL 8400:localhost:8400
 Clone this repository and in `demo` directory, run the following with node 12 or 14:
 
 ```bash
+# clone and get to the demo dir
+git clone git@github.com:stanford-oval/wikidata-workdir
+git checkout wip/ablation
+cd demo
+
 # download necessary files 
 ./sync.sh
 
@@ -44,3 +49,6 @@ npm ci
 # start demo
 node index.js 
 ```
+
+Now you can type your natural language and this tool will return ThingTalk, SPARQL, and answers retrieved from Wikidata.
+Note that each of the steps may take some time, wait patiently. If something failed at any step, it will show an error message. 

@@ -19,6 +19,8 @@ parameter-datasets.tsv
 synthetic*.tsv
 augmented*.tsv
 fewshot*.tsv
+dev*.tsv
+test*.tsv
 everything.tsv
 *-dropped.tsv
 *.sqlite
@@ -26,3 +28,6 @@ everything.tsv
 
 node_modules
 domain.json
+
+*.jsonl
+!openai/fewshot.tsv

@@ -1,7 +1,7 @@
 -include ./config.mk
 
-base_model=ada
-model=
+base_model=davinci
+model=davinci:ft-open-virtual-assistant-lab-stanford:silei-wikidata-2022-10-26-09-23-36
 
 linker=oracle
 size=1000
@@ -34,6 +34,12 @@ finetune: everything-${size}.jsonl dev.jsonl
 		-m $(base_model) \
 		--n_epochs ${epochs} \
 		--suffix "silei wikidata"
+
+%.results: %.jsonl
+	python evaluate.py \
+		-i $^ \
+		-o $@ \
+		--model ${model}
 
 clean:
 	rm *.jsonl

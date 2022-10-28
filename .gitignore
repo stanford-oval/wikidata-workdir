@@ -30,4 +30,5 @@ node_modules
 domain.json
 
 *.jsonl
+openai/cache.json
 !openai/fewshot.tsv

@@ -31,4 +31,7 @@ domain.json
 
 *.jsonl
 openai/cache.json
+openai/*.results
 !openai/fewshot.tsv
+!openai/dev.tsv
+!openai/test.tsv

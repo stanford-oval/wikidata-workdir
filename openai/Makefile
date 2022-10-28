@@ -1,3 +1,4 @@
+# exports OPENAI_API_KEY inside config.mk, required for finetune and evaluation
 -include ./config.mk
 
 base_model=davinci
@@ -27,7 +28,6 @@ everything-%.jsonl: fewshot.jsonl synthetic-%.jsonl
 
 finetune: everything-${size}.jsonl dev.jsonl
 	openai \
-		-k ${developer_key} \
 		api fine_tunes.create \
 		-t $< \
 		-v dev.jsonl \

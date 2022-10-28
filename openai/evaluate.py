@@ -40,9 +40,8 @@ if __name__ == '__main__':
                 cache[example['prompt']] = prediction
 
             # check exact match
-            if example['completion'] == prediction:
+            if example['completion'].strip() == prediction.strip():
                 correct += 1
-                break
 
             total += 1
             fout.write('{}\t{}\t{}\t{}\n'.format(example['id'], example['utterance'], example['completion'].strip(), prediction.strip()))

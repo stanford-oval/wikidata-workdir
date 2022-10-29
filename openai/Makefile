@@ -37,7 +37,7 @@ finetune: everything-${size}.jsonl dev.jsonl
 		-v dev.jsonl \
 		-m $(base_model) \
 		--n_epochs ${epochs} \
-		--suffix "silei wikidata"
+		--suffix "silei wikidata ${size}"
 
 %-predictions.tsv: %.jsonl
 	python evaluate.py \

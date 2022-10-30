@@ -6,11 +6,13 @@ wikidata_cache = $(qalddir)/wikidata_cache.sqlite
 bootleg =$(qalddir)/bootleg.sqlite
 
 base_model=davinci
-model=davinci:ft-open-virtual-assistant-lab-stanford:silei-wikidata-2022-10-26-09-23-36
+timestamp=2022-10-26-09-23-36
+model=${base_model}:ft-open-virtual-assistant-lab-stanford:silei-wikidata-${timestamp}
 
 linker=oracle
 size=1000
 epochs=2
+schema=false
 
 .PHONY: clean
 .SECONDARY:
@@ -25,7 +27,8 @@ synthetic-%.tsv: synthetic.tsv
 		--module $(linker) \
 		--ner-cache ../qald/${linker}.sqlite \
 		--wikidata-cache $(wikidata_cache) \
-		--bootleg $(bootleg) 
+		--bootleg $(bootleg) \
+		$(if $(findstring true,$(schema)),--schema,) \
 
 everything-%.jsonl: fewshot.jsonl synthetic-%.jsonl
 	cat $^ > $@
@@ -74,5 +77,12 @@ finetune: everything-${size}.jsonl dev.jsonl
 		--dataset gold-sparql.tsv \
 		--prediction predictions-sparql.tsv > $@ 
 
+archive:
+	mkdir -p ${size}-${timestamp}
+	mv *.results ${size}-${timestamp}/ 
+	mv *-predictions.tsv ${size}-${timestamp}/
+	mv cache.json ${size}-${timestamp}/
+
 clean:
-	rm *.jsonl
+	rm -rf predictions-sparql.tsv gold-sparql.tsv 
+	rm -rf *.jsonl

@@ -36,3 +36,4 @@ openai/*-sparql.tsv
 !openai/fewshot.tsv
 !openai/dev.tsv
 !openai/test.tsv
+openai/*/

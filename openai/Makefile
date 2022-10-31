@@ -6,7 +6,7 @@ wikidata_cache = $(qalddir)/wikidata_cache.sqlite
 bootleg =$(qalddir)/bootleg.sqlite
 
 base_model=davinci
-timestamp=2022-10-26-09-23-36
+timestamp=2022-10-29-06-56-05
 model=${base_model}:ft-open-virtual-assistant-lab-stanford:silei-wikidata-${timestamp}
 
 linker=oracle
@@ -78,10 +78,10 @@ finetune: everything-${size}.jsonl dev.jsonl
 		--prediction predictions-sparql.tsv > $@ 
 
 archive:
-	mkdir -p ${size}-${timestamp}
-	mv *.results ${size}-${timestamp}/ 
-	mv *-predictions.tsv ${size}-${timestamp}/
-	mv cache.json ${size}-${timestamp}/
+	mkdir -p ${base_model}-${size}-${timestamp}
+	mv *.results ${base_model}-${size}-${timestamp}/ 
+	mv *-predictions.tsv ${base_model}-${size}-${timestamp}/
+	mv cache.json ${base_model}-${size}-${timestamp}/
 
 clean:
 	rm -rf predictions-sparql.tsv gold-sparql.tsv 

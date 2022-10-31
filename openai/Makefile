@@ -6,11 +6,11 @@ wikidata_cache = $(qalddir)/wikidata_cache.sqlite
 bootleg =$(qalddir)/bootleg.sqlite
 
 base_model=
+size=
 timestamp=
 model=${base_model}:ft-open-virtual-assistant-lab-stanford:silei-wikidata-${size}-${timestamp}
 
 linker=oracle
-size=1000
 epochs=2
 schema=false
 
@@ -82,9 +82,9 @@ models.json:
 
 archive:
 	mkdir -p ${base_model}-${size}-${timestamp}
-	mv *.results ${base_model}-${size}-${timestamp}/ 
 	mv *-predictions.tsv ${base_model}-${size}-${timestamp}/
 	mv cache.json ${base_model}-${size}-${timestamp}/
+	mv *.results ${base_model}-${size}-${timestamp}/ 
 
 clean:
 	rm -rf predictions-sparql.tsv gold-sparql.tsv 

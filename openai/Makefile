@@ -5,8 +5,8 @@ qalddir=../qald
 wikidata_cache = $(qalddir)/wikidata_cache.sqlite
 bootleg =$(qalddir)/bootleg.sqlite
 
-base_model=davinci
-timestamp=2022-10-29-06-56-05
+base_model=
+timestamp=
 model=${base_model}:ft-open-virtual-assistant-lab-stanford:silei-wikidata-${size}-${timestamp}
 
 linker=oracle

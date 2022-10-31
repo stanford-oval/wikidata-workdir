@@ -7,7 +7,7 @@ bootleg =$(qalddir)/bootleg.sqlite
 
 base_model=davinci
 timestamp=2022-10-29-06-56-05
-model=${base_model}:ft-open-virtual-assistant-lab-stanford:silei-wikidata-${timestamp}
+model=${base_model}:ft-open-virtual-assistant-lab-stanford:silei-wikidata-${size}-${timestamp}
 
 linker=oracle
 size=1000

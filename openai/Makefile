@@ -77,6 +77,9 @@ finetune: everything-${size}.jsonl dev.jsonl
 		--dataset gold-sparql.tsv \
 		--prediction predictions-sparql.tsv > $@ 
 
+models.json: 
+	curl https://api.openai.com/v1/models -H 'Authorization: Bearer $(OPENAI_API_KEY)' > $@
+
 archive:
 	mkdir -p ${base_model}-${size}-${timestamp}
 	mv *.results ${base_model}-${size}-${timestamp}/ 

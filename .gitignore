@@ -37,3 +37,4 @@ openai/*-sparql.tsv
 !openai/dev.tsv
 !openai/test.tsv
 openai/*/
+openai/models.json

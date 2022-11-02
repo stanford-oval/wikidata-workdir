@@ -30,7 +30,7 @@ synthetic-%.tsv: synthetic.tsv
 		--bootleg $(bootleg) \
 		$(if $(findstring true,$(schema)),--schema,) \
 
-everything-%.jsonl: fewshot.jsonl synthetic-%.jsonl
+everything-%.jsonl: fewshot.jsonl $(if $(findstring 0,$(size)),,synthetic-%.jsonl)
 	cat $^ > $@
 
 finetune: everything-${size}.jsonl dev.jsonl
@@ -76,6 +76,9 @@ finetune: everything-${size}.jsonl dev.jsonl
 		--bootleg-db $(bootleg) \
 		--dataset gold-sparql.tsv \
 		--prediction predictions-sparql.tsv > $@ 
+
+evaluate: dev.results test.results
+	@for f in $^ ; do echo $$f ; cat $$f ; done
 
 models.json: 
 	curl https://api.openai.com/v1/models -H 'Authorization: Bearer $(OPENAI_API_KEY)' > $@

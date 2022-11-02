@@ -33,6 +33,7 @@ if __name__ == '__main__':
                 response = openai.Completion.create(
                     model = args.model,
                     prompt = example['prompt'],
+                    temperature=0,
                     stop = RESPONSE_END_TOKEN,
                     max_tokens = 100
                 )

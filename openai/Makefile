@@ -32,7 +32,7 @@ synthetic-%.tsv: synthetic.tsv
 		--bootleg $(bootleg) \
 		$(if $(findstring true,$(schema)),--schema,) \
 
-everything-%.jsonl: fewshot.jsonl $(if $(findstring 0,$(size)),,synthetic-%.jsonl)
+everything-%.jsonl: fewshot.jsonl synthetic-%.jsonl
 	cat $^ > $@
 
 finetune: everything-${size}.jsonl dev.jsonl

@@ -25,12 +25,13 @@ synthetic-%.tsv: synthetic.tsv
 %.jsonl: %.tsv
 	node $(qalddir)/dist/lib/prompt/index.js \
 		-i $^ \
-		-o $@ \
+		-o $@.tmp \
 		--module $(linker) \
 		--ner-cache ../qald/${linker}.sqlite \
 		--wikidata-cache $(wikidata_cache) \
 		--bootleg $(bootleg) \
-		$(if $(findstring true,$(schema)),--schema,) \
+		$(if $(findstring true,$(schema)),--schema,) 
+	mv $@.tmp $@
 
 everything-%.jsonl: fewshot.jsonl synthetic-%.jsonl
 	cat $^ > $@
@@ -48,8 +49,9 @@ finetune: everything-${size}.jsonl dev.jsonl
 %-predictions.tsv: %.jsonl
 	python evaluate.py \
 		-i $^ \
-		-o $@ \
+		-o $@.tmp \
 		--model ${model}
+	mv $@.tmp $@
 
 %.results: %-predictions.tsv
 	node $(qalddir)/dist/lib/converter/index.js \

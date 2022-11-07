@@ -19,3 +19,4 @@ everything.tsv
 *.sqlite
 
 converted
+log.txt

@@ -59,16 +59,15 @@ if __name__ == '__main__':
     elif os.path.isfile(args.input):
         id_name = args.input.split(os.sep)[-1]
         data[id_name] = json.load(open(args.input))
-    f_count = len(data.keys())
-    schema = {
-        'dataset': {
-            "id": None
-        },
-        'questions': []
-    }
-    
+    f_count = len(data.keys())   
     sample_count = 0
-    for n, (k, d) in enumerate(data.items(), 1):   
+    for n, (k, d) in enumerate(data.items(), 1):
+        schema = {
+            'dataset': {
+                "id": None
+            },
+            'questions': []
+        }
         schema['dataset']['id'] = k
         for i in d:
             temp = {

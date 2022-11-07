@@ -1,7 +1,9 @@
 s3_bucket ?= https://nfs009a5d03c43b4e7e8ec2.blob.core.windows.net/pvc-a8853620-9ac7-4885-a30e-0ec357f17bb6
-geniedir ?= $(HOME)/genie-toolkit
+geniedir ?= /Users/jwu/Documents/Workspace/genie-sdk/genie-toolkit
 qalddir ?= qald
 thingpedia_url = https://almond-dev.stanford.edu/thingpedia
+
+developer_key ?= ad4e938f1b1e0ee5bbb0615315f6222436071d976262c79491213ae544b415f6
 
 -include ./config.mk
 

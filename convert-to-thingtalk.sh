@@ -32,7 +32,7 @@ for f in $files
 do
     iName="$(basename $f .json)"
     oName="$iName.tsv"
-    echo "$iName -> $oName"
+    echo -e "\n\n##### $iName -> $oName"
     node qald/dist/lib/converter/index.js \
         -i ${f} \
         -o "$OUTPUT_PATH/$oName" \

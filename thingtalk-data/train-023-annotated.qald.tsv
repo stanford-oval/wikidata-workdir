@@ -1,0 +1,11 @@
+WebQTrn-3707	when is the last time chicago bulls won a championship ?	[ point_in_time ] of sort ( point_in_time desc of @wd . entity ( ) filter instance_of == " Q842375 " ^^wd:entity_subdomain && contains ( winner , " Q128109 " ^^wd:p_winner ) ) [ 1 ] ;
+WebQTrn-3709	what is the holy book in taoism ?	[ main_regulatory_text ] of @wd . entity ( ) filter id == " Q9598 " ^^wd:entity ;
+WebQTrn-3720	what countries are included in the netherlands ?	[ contains_administrative_territorial_entity ] of @wd . country ( ) filter id == " Q55 " ^^wd:country ;
+WebQTrn-3727	what is the biggest country in europe by population ?	sort ( population desc of @wd . country ( ) filter contains ( continent , " Q46 " ^^wd:p_continent ) ) [ 1 ] ;
+WebQTrn-3730	what are the african nations ?	[ < has_parts + > : Entity ( wd:country ) ] of @wd . location ( ) filter id == " Q15 " ^^wd:location ;
+WebQTrn-3743	what to do in venice beach ca ?	@wd . tourist_attraction ( ) filter contains ( located_in_the_administrative_territorial_entity , " Q773853 " ^^wd:p_located_in_the_administrative_territorial_entity ) ;
+WebQTrn-3744	what college did russell wilson go to ?	[ educated_at : Entity ( wd:higher_education_institution ) ] of @wd . human ( ) filter id == " Q1149781 " ^^wd:human ;
+WebQTrn-3747	what is wrong with robin roberts ?	[ medical_condition ] of @wd . human ( ) filter id == " Q2041541 " ^^wd:human ;
+WebQTrn-3754	what team does pudge rodriguez play for ?	[ member_of_sports_team ] of @wd . human ( ) filter id == " Q706908 " ^^wd:human ;
+WebQTrn-3763	what country is russia close to ?	[ shares_border_with ] of @wd . country ( ) filter id == " Q159 " ^^wd:country ;
+WebQTrn-3764	who is the coach of inter milan now ?	[ head_coach ] of @wd . entity ( ) filter id == " Q631 " ^^wd:entity ;

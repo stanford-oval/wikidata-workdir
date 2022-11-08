@@ -97,3 +97,6 @@ if __name__ == '__main__':
             json.dump(schema, outfile)
     
     print(f'total samples: {sample_count:,}')
+    
+# python annotation_to_qald_format.py -i '/Users/jwu/Documents/Workspace/web-questions-wikidata/data/test-000-annotated.json' -o '/Users/jwu/Documents/Workspace/wikidata-workdir/converted/'
+# python annotation_to_qald_format.py -i '/Users/jwu/Documents/Workspace/web-questions-wikidata/data/'

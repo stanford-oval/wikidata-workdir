@@ -66,7 +66,9 @@ emptydataset.tt:
 # prepare raw data for fewshot, eval, and test
 $(experiment)/data: $(qalddir)
 	mkdir -p $@
-	node $(qalddir)/dist/lib/divide.js $(qalddir)/data/$(experiment)/train.json 
+	node $(qalddir)/dist/lib/divide.js \
+		$(qalddir)/data/$(experiment)/train.json\
+		$(if $(findstring webq,$(experiment)),--size 500,)
 	mv xaa $@/fewshot.json
 	mv xab $@/eval.json
 	cp $(qalddir)/data/$(experiment)/test.json $@/test.json

@@ -9,11 +9,11 @@ base_model=
 size=
 timestamp=
 lr=
-model=${base_model}:ft-open-virtual-assistant-lab-stanford:silei-wikidata-${size}-${lr}-${timestamp}
-dir=results/${base_model}-${size}-${lr}-${timestamp}/
+epochs=2
+model=${base_model}:ft-open-virtual-assistant-lab-stanford:silei-wikidata-${size}-${epochs}-${lr}-${timestamp}
+dir=results/${base_model}-${size}-${epochs}-${lr}-${timestamp}/
 
 linker=oracle
-epochs=2
 schema=false
 
 .PHONY: clean
@@ -44,7 +44,7 @@ finetune: everything-${size}.jsonl dev.jsonl
 		-m $(base_model) \
 		--n_epochs ${epochs} \
 		--learning_rate_multiplier ${lr}\
-		--suffix "silei wikidata ${size} ${lr}"
+		--suffix "silei wikidata ${size} ${epochs} ${lr}"
 
 %-predictions.tsv: %.jsonl
 	python evaluate.py \

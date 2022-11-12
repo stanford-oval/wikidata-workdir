@@ -33,6 +33,7 @@ Options:
 - size: the size of the synthetic data to include (fewshot data is always included). If no synthetic data is needed, first create an empty file `synthetic-0.jsonl` and then run the above command with size set to 0.
 - lr: the learning rate, normally between 0.02 and 0.2
 - epochs: the number of epochs, default to 2
+- schema: default to false, set to true to include properties connected to the entities in the question. This is an experimental feature, not tested.  
 
 This command should generate a prompt file named `everything-<SIZE>.jsonl`. Check your file before moving forward. 
 

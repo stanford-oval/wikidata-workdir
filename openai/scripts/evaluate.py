@@ -6,6 +6,8 @@ import openai
 RESPONSE_END_TOKEN = '\n'
 
 openai.api_key = os.environ['OPENAI_API_KEY']
+openai.api_base = 'https://ovalopenairesource.openai.azure.com/'
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

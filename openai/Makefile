@@ -37,17 +37,16 @@ everything-%.jsonl: fewshot.jsonl synthetic-%.jsonl
 	cat $^ > $@
 
 finetune: everything-${size}.jsonl dev.jsonl
-	openai \
-		api fine_tunes.create \
-		-t $< \
-		-v dev.jsonl \
-		-m $(base_model) \
-		--n_epochs ${epochs} \
-		--learning_rate_multiplier ${lr}\
+	python scripts/finetune.py \
+		--train $< \
+		--validate dev.jsonl \
+		--model $(base_model) \
+		--epochs $(epochs) \
+		--lr $(lr) \
 		--suffix "silei wikidata ${size} ${epochs} ${lr}"
 
 %-predictions.tsv: %.jsonl
-	python evaluate.py \
+	python scripts/evaluate.py \
 		-i $^ \
 		-o $@.tmp \
 		--model ${model}

@@ -1,6 +1,7 @@
 # exports OPENAI_API_KEY inside config.mk, required for finetune and evaluation
 -include ./config.mk
 
+url=https://ovalopenairesource.openai.azure.com/openai
 qalddir=../qald
 wikidata_cache = $(qalddir)/wikidata_cache.sqlite
 bootleg =$(qalddir)/bootleg.sqlite
@@ -36,10 +37,14 @@ synthetic-%.tsv: synthetic.tsv
 everything-%.jsonl: fewshot.jsonl synthetic-%.jsonl
 	cat $^ > $@
 
-finetune: everything-${size}.jsonl dev.jsonl
+prepared-%.jsonl: %.jsonl
+	openai tools fine_tunes.prepare_data -f $^ 
+	mv $*_prepared.jsonl $@
+
+finetune: prepared-everything-${size}.jsonl prepared-dev.jsonl
 	python scripts/finetune.py \
-		--train $< \
-		--validate dev.jsonl \
+		--train prepared-everything-${size}.jsonl \
+		--validate prepared-dev.jsonl \
 		--model $(base_model) \
 		--epochs $(epochs) \
 		--lr $(lr) \
@@ -83,18 +88,6 @@ finetune: everything-${size}.jsonl dev.jsonl
 
 evaluate: dev.results test.results
 	@for f in $^ ; do echo $$f ; cat $$f ; done
-
-models.json: 
-	curl https://api.openai.com/v1/models -H 'Authorization: Bearer $(OPENAI_API_KEY)' > $@
-
-files.json: 
-	curl https://api.openai.com/v1/files -H 'Authorization: Bearer $(OPENAI_API_KEY)' > $@
-
-file-%:
-	curl https://api.openai.com/v1/files/$@/content -H 'Authorization: Bearer $(OPENAI_API_KEY)' > $@
-
-delete-file-%:
-	curl https://api.openai.com/v1/files/file-$* -X DELETE -H 'Authorization: Bearer $(OPENAI_API_KEY)' 
 
 archive:
 	mkdir -p $(dir)

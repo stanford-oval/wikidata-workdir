@@ -11,10 +11,9 @@ openai.api_version = '2022-06-01-preview'
 
 def file_status(file_id):
     status = openai.File.retrieve(file_id)["status"]
-    while status not in ['success', 'failed']:
+    while status not in ['succeeded', 'failed']:
         time.sleep(1)
-        openai.File.retrieve(file_id)["status"]
-    print(openai.File.retrieve(file_id))
+        status = openai.File.retrieve(file_id)["status"]
     return status
 
 if __name__ == '__main__':
@@ -35,12 +34,14 @@ if __name__ == '__main__':
     train_id = cli.FineTune._get_or_upload(args.train)
     validate_id = cli.FineTune._get_or_upload(args.validate)
 
-    print(file_status(train_id))
-    print(file_status(validate_id))
-    response = openai.FineTune.create(training_file=train_id,
-                                        validation_file=validate_id,
-                                        model=args.model,
-                                        n_epochs=args.epochs,
-                                        learning_rate_multiplier=args.lr,
-                                        suffix=args.suffix)
-    print(response)
+
+    if file_status(train_id) == 'failed' or file_status(validate_id) == 'failed':
+        print('File upload failed.')
+    else:
+        response = openai.FineTune.create(training_file=train_id,
+                                          validation_file=validate_id,
+                                          model=args.model,
+                                          n_epochs=args.epochs,
+                                          learning_rate_multiplier=args.lr,
+                                          suffix=args.suffix)
+        print(response)

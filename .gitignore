@@ -30,6 +30,7 @@ node_modules
 domain.json
 
 *.jsonl
+prompt.txt
 openai/cache.json
 openai/*.results
 openai/*-sparql.tsv

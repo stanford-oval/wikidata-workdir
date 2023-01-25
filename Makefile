@@ -85,13 +85,9 @@ manifest.tt: $(qalddir) $(wikidata_cache) $(bootleg)
 		-o $@ \
 		$(if $(findstring all,$(domains)),,--domains $(domains)) \
 		$(if $(findstring true,$(exclude_canonical_annotations)),--no-canonical-annotations,)
-	$(genie) download-string-values \
-		--thingpedia-url $(thingpedia_url) \
-		--developer-key $(developer_key) \
-		--manifest parameter-datasets.tsv \
-		--append-manifest \
-		--type tt:short_free_text \
-		-d parameter-datasets 
+	curl https://almond-static.stanford.edu/research/shared-parameter-datasets/tt:short_free_text.tsv -o parameter-datasets/tt:short_free_text.tsv
+	echo "string\ten-US\ttt:short_free_text\tparameter-datasets/tt:short_free_text.tsv" | tee -a parameter-datasets.tsv
+	
 
 # synthesize data with depth d
 synthetic-d%.tsv: manifest.tt $(dataset_file)
@@ -133,7 +129,7 @@ augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 		-o $@.tmp2
 	$(genie) typecheck $@.tmp2\
 		-o $@ \
-		--dropped fewshot-dropped.tsv \
+		--dropped $*-augment-dropped.tsv \
 		--thingpedia manifest.tt \
 		--include-entity-value \
 		--exclude-entity-display 
@@ -147,7 +143,7 @@ augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 		--cache $(wikidata_cache) \
 		--bootleg-db $(bootleg) \
 		--save-cache \
-		-d fewshot-dropped.tsv \
+		-d $*-convertion-dropped.tsv \
 		-o $@.tmp \
 		$(if $(findstring fewshot,$*),,--exclude-entity-display --include-entity-value)
 	node $(qalddir)/dist/lib/post-processor.js \
@@ -161,7 +157,7 @@ augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 		-o $@.tmp2
 	$(genie) typecheck $@.tmp2\
 		-o $@ \
-		--dropped fewshot-dropped.tsv \
+		--dropped $*-typecheck-dropped.tsv \
 		--thingpedia manifest.tt \
 		--include-entity-value \
 		--exclude-entity-display 

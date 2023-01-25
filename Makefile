@@ -19,6 +19,7 @@ domains ?= all
 qald_version ?= main
 dataset_file = emptydataset.tt
 type_system ?= 'hierarchical'
+update_manifest ?= true
 exclude_canonical_annotations ?= false
 synthetic_flags ?= \
 	projection_with_filter \
@@ -75,19 +76,22 @@ $(experiment)/data: $(qalddir)
 
 # generate manifest
 manifest.tt: $(qalddir) $(wikidata_cache) $(bootleg)
-	mkdir -p parameter-datasets ; \
-	node $(qalddir)/dist/lib/manifest-generator.js \
-		--cache $(wikidata_cache) \
-		--use-wikidata-alt-labels \
-		--save-cache \
-		--bootleg-db $(bootleg) \
-		--type-system $(type_system) \
-		-o $@ \
-		$(if $(findstring all,$(domains)),,--domains $(domains)) \
-		$(if $(findstring true,$(exclude_canonical_annotations)),--no-canonical-annotations,)
-	curl https://almond-static.stanford.edu/research/shared-parameter-datasets/tt:short_free_text.tsv -o parameter-datasets/tt:short_free_text.tsv
-	echo "string\ten-US\ttt:short_free_text\tparameter-datasets/tt:short_free_text.tsv" | tee -a parameter-datasets.tsv
-	
+	if [[ "$(update_manifest)" == "true" ]] ;
+		mkdir -p parameter-datasets ; \
+		node $(qalddir)/dist/lib/manifest-generator.js \
+			--cache $(wikidata_cache) \
+			--use-wikidata-alt-labels \
+			--save-cache \
+			--bootleg-db $(bootleg) \
+			--type-system $(type_system) \
+			-o $@ \
+			$(if $(findstring all,$(domains)),,--domains $(domains)) \
+			$(if $(findstring true,$(exclude_canonical_annotations)),--no-canonical-annotations,) ; \
+		curl https://almond-static.stanford.edu/research/shared-parameter-datasets/tt:short_free_text.tsv -o parameter-datasets/tt:short_free_text.tsv ; \
+		echo "string\ten-US\ttt:short_free_text\tparameter-datasets/tt:short_free_text.tsv" | tee -a parameter-datasets.tsv ; \
+	else \
+		touch manifest.tt \
+	fi
 
 # synthesize data with depth d
 synthetic-d%.tsv: manifest.tt $(dataset_file)
@@ -194,14 +198,28 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 	fi
 	cat $^ > $@
 
+# append ned information
+%-ned.tsv: %.tsv
+	if [[ -n "$(ned)" ]] ; then \
+		node $(qalddir)/dist/lib/ner/index.js \
+			-i $*.tsv \
+			-o $*-ned.tsv \
+			--wikidata-cache $(wikidata_cache) \
+			--bootleg $(bootleg) \
+			--module $(ned) ; \
+	else \
+		cp $*.tsv $*-ned.tsv ; \
+	fi
+
+
 # final data directory, putting train, eval and test together 
-datadir: $(if $(findstring true,$(synthetic_test)),eval-synthetic/annotated.tsv test-synthetic/annotated.tsv,eval/annotated.tsv test/annotated.tsv) everything.tsv
+datadir: $(if $(findstring true,$(synthetic_test)),eval-synthetic/annotated-ned.tsv test-synthetic/annotated-ned.tsv,eval/annotated-ned.tsv test/annotated-ned.tsv) everything-ned.tsv
 	mkdir -p $@
 	cp manifest.tt $@/manifest.tt
 	cp entities.json $@/entities.json
-	cp everything.tsv $@/train.tsv
-	cp $(if $(findstring true,$(synthetic_test)),eval-synthetic/annotated.tsv,eval/annotated.tsv) $@/eval.tsv
-	cp $(if $(findstring true,$(synthetic_test)),test-synthetic/annotated.tsv,test/annotated.tsv) $@/test.tsv 
+	cp everything-ned.tsv $@/train.tsv
+	cp $(if $(findstring true,$(synthetic_test)),eval-synthetic/annotated-ned.tsv,eval/annotated-ned.tsv) $@/eval.tsv
+	cp $(if $(findstring true,$(synthetic_test)),test-synthetic/annotated-ned.tsv,test/annotated-ned.tsv) $@/test.tsv 
 	wc -l datadir/*.tsv
 	touch $@
 

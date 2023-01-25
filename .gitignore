@@ -3,6 +3,7 @@ config.mk
 qald
 qald7
 qald9
+webq
 parameter-datasets
 eval
 test
@@ -25,6 +26,7 @@ everything.tsv
 *-dropped.tsv
 *.sqlite
 *.tmp*
+*-ned.tsv
 
 node_modules
 domain.json

@@ -32,6 +32,8 @@ synthetic_flags ?= \
 	wikidata 
 generate_flags = $(foreach v,$(synthetic_flags),--set-flag $(v))
 normalization_options ?= --normalize-domains id-filtered-only --normalize-entity-types
+ned ?=
+gpt3_rephrase ?= false # requires OPENAI_API_KEY
 
 pruning_size ?= 5
 maxdepth ?= 8
@@ -76,7 +78,7 @@ $(experiment)/data: $(qalddir)
 
 # generate manifest
 manifest.tt: $(qalddir) $(wikidata_cache) $(bootleg)
-	if [[ "$(update_manifest)" == "true" ]] ;
+	if [[ "$(update_manifest)" == "true" ]] ; then \
 		mkdir -p parameter-datasets ; \
 		node $(qalddir)/dist/lib/manifest-generator.js \
 			--cache $(wikidata_cache) \
@@ -90,7 +92,7 @@ manifest.tt: $(qalddir) $(wikidata_cache) $(bootleg)
 		curl https://almond-static.stanford.edu/research/shared-parameter-datasets/tt:short_free_text.tsv -o parameter-datasets/tt:short_free_text.tsv ; \
 		echo "string\ten-US\ttt:short_free_text\tparameter-datasets/tt:short_free_text.tsv" | tee -a parameter-datasets.tsv ; \
 	else \
-		touch manifest.tt \
+		touch manifest.tt ; \
 	fi
 
 # synthesize data with depth d
@@ -206,7 +208,8 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 			-o $*-ned.tsv \
 			--wikidata-cache $(wikidata_cache) \
 			--bootleg $(bootleg) \
-			--module $(ned) ; \
+			--module $(ned) \
+			$(if $(or $(findstring false,$(gpt3_rephrase)), $(findstring everything,$*)),,--gpt3-rephrase) ; \
 	else \
 		cp $*.tsv $*-ned.tsv ; \
 	fi

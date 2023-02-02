@@ -23,7 +23,7 @@ synthetic-%.tsv: synthetic.tsv
 	shuf $^ | head -$* > $@
 
 %.jsonl: %.tsv
-	node $(qalddir)/dist/lib/prompt/semantic-parsing.js \
+	node $(qalddir)/dist/lib/gpt3/prompt/semantic-parsing.js \
 		-i $^ \
 		-o $@.tmp \
 		--module $(linker) \

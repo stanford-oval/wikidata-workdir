@@ -1,7 +1,6 @@
 s3_bucket ?= https://nfs009a5d03c43b4e7e8ec2.blob.core.windows.net/pvc-a8853620-9ac7-4885-a30e-0ec357f17bb6
 geniedir ?= $(HOME)/genie-toolkit
 qalddir ?= qald
-thingpedia_url = https://almond-dev.stanford.edu/thingpedia
 
 -include ./config.mk
 
@@ -34,6 +33,7 @@ generate_flags = $(foreach v,$(synthetic_flags),--set-flag $(v))
 normalization_options ?= --normalize-domains id-filtered-only --normalize-entity-types
 ned ?=
 gpt3_rephrase ?= false # requires OPENAI_API_KEY
+openai_api_key ?= ${OPENAI_API_KEY}
 
 pruning_size ?= 5
 maxdepth ?= 8
@@ -203,6 +203,7 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 # append ned information
 %-ned.tsv: %.tsv
 	if [[ -n "$(ned)" ]] ; then \
+		export OPENAI_API_KEY=$(openai_api_key) ; \
 		node $(qalddir)/dist/lib/ner/index.js \
 			-i $*.tsv \
 			-o $*-ned.tsv \

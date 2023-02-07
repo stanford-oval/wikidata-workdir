@@ -240,10 +240,10 @@ models/%/best.pth:
 	fi
 
 # evaluation
-$(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated.tsv manifest.tt 
+$(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.tt 
 	mkdir -p $(eval_set)/$(dir $*)
 	if [[ "$(metric)" == "query" ]] ; then \
-		GENIENLP_NUM_BEAMS=$(beam_size) $(genie) evaluate-server $(eval_set)/annotated.tsv \
+		GENIENLP_NUM_BEAMS=$(beam_size) $(genie) evaluate-server $(eval_set)/annotated-ned.tsv \
 			--url "file://$(abspath $(dir $<))" \
 			--thingpedia manifest.tt \
 			--debug \
@@ -256,7 +256,7 @@ $(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated.tsv manifest.tt
 			-o $@.tmp | tee $(eval_set)/$*.debug; \
 		mv $@.tmp $@ ; \
 	else \
-		GENIENLP_NUM_BEAMS=$(beam_size) $(genie) predict $(eval_set)/annotated.tsv \
+		GENIENLP_NUM_BEAMS=$(beam_size) $(genie) predict $(eval_set)/annotated-ned.tsv \
 			--url "file://$(abspath $(dir $<))" \
 			--debug \
 			--csv \

@@ -218,6 +218,7 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 
 # final data directory, putting train, eval and test together 
 datadir: $(if $(findstring true,$(synthetic_test)),eval-synthetic/annotated-ned.tsv test-synthetic/annotated-ned.tsv,eval/annotated-ned.tsv test/annotated-ned.tsv) everything-ned.tsv
+	sleep 99999
 	mkdir -p $@
 	cp manifest.tt $@/manifest.tt
 	cp entities.json $@/entities.json

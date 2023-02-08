@@ -310,12 +310,17 @@ evaluate-output-artifacts:
 clean-data:
 	rm -rf qald7 qald9
 	rm -rf datadir eval test eval-synthetic test-synthetic
-	rm -rf synthetic* fewshot* augmented* everything.tsv *.tmp*
+	rm -rf synthetic* fewshot* augmented* everything* *.tmp* *-dropped.tsv
+
+# clean only the synthetic data generated
+clean-synthetic:
+	rm -rf datadir eval-synthetic test-synthetic
+	rm -rf synthetic* everything* *.tmp* 
 
 # clean up workdir entirely, restart
 clean:
 	rm -rf qald7 qald9
 	rm -rf datadir eval test eval-synthetic test-synthetic
-	rm -rf synthetic* fewshot* augmented* everything.tsv
+	rm -rf synthetic* fewshot* augmented* everything* *-dropped.tsv
 	rm -rf parameter-datasets 
 	rm -rf *.tt *.json *.tsv *.tmp*

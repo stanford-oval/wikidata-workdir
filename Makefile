@@ -100,7 +100,8 @@ synthetic-d%.tsv: manifest.tt $(dataset_file)
 	$(genie) generate \
 		--thingpedia manifest.tt --entities entities.json --dataset $(dataset_file) \
 		--target-pruning-size $(pruning_size) \
-		-o $@.tmp $(generate_flags) --maxdepth $$(echo $* | cut -f1 -d'-') --random-seed $@ --debug 3
+		-o $@.tmp $(generate_flags) --maxdepth $$(echo $* | cut -f1 -d'-') --random-seed $@ --debug 3 \
+		--id-prefix $*-
 	mv $@.tmp $@
 
 # merge synthetic data
@@ -218,7 +219,6 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 
 # final data directory, putting train, eval and test together 
 datadir: $(if $(findstring true,$(synthetic_test)),eval-synthetic/annotated-ned.tsv test-synthetic/annotated-ned.tsv,eval/annotated-ned.tsv test/annotated-ned.tsv) everything-ned.tsv
-	sleep 99999
 	mkdir -p $@
 	cp manifest.tt $@/manifest.tt
 	cp entities.json $@/entities.json

@@ -90,7 +90,7 @@ manifest.tt: $(qalddir) $(wikidata_cache) $(bootleg)
 			$(if $(findstring all,$(domains)),,--domains $(domains)) \
 			$(if $(findstring true,$(exclude_canonical_annotations)),--no-canonical-annotations,) ; \
 		curl https://almond-static.stanford.edu/research/shared-parameter-datasets/tt:short_free_text.tsv -o parameter-datasets/tt:short_free_text.tsv ; \
-		echo -e "string\ten-US\ttt:short_free_text\tparameter-datasets/tt:short_free_text.tsv" | tee -a parameter-datasets.tsv ; \
+		echo "string	en-US	tt:short_free_text	parameter-datasets/tt:short_free_text.tsv" | tee -a parameter-datasets.tsv ; \
 	else \
 		touch manifest.tt ; \
 	fi

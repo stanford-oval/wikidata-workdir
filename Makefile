@@ -81,6 +81,7 @@ manifest.tt: $(qalddir) $(wikidata_cache) $(bootleg)
 	if [[ "$(update_manifest)" == "true" ]] ; then \
 		mkdir -p parameter-datasets ; \
 		node $(qalddir)/dist/lib/manifest-generator.js \
+			--experiment $(experiment) \
 			--cache $(wikidata_cache) \
 			--use-wikidata-alt-labels \
 			--save-cache \

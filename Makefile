@@ -310,7 +310,7 @@ evaluate-output-artifacts:
 
 # clean up data generated, but keeps manifest
 clean-data:
-	rm -rf qald7 qald9
+	rm -rf qald7 qald9 webq
 	rm -rf datadir eval test eval-synthetic test-synthetic
 	rm -rf synthetic* fewshot* augmented* everything* *.tmp* *-dropped.tsv
 

@@ -31,7 +31,8 @@ synthetic_flags ?= \
 	wikidata 
 generate_flags = $(foreach v,$(synthetic_flags),--set-flag $(v))
 normalization_options ?= --normalize-domains id-filtered-only --normalize-entity-types
-ned ?=
+ned ?= 
+synthetic_ned ?= azure
 gpt3_rephrase ?= false # requires OPENAI_API_KEY
 openai_api_key ?= ${OPENAI_API_KEY}
 
@@ -211,7 +212,8 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 			-o $*-ned.tsv \
 			--wikidata-cache $(wikidata_cache) \
 			--bootleg $(bootleg) \
-			--module $(ned) \
+			--module $(if $(findstring everything,$*),$(synthetic_ned),$(ned)) \
+			$(if $(findstring everything,$*),--is-synthetic,) \
 			$(if $(or $(findstring false,$(gpt3_rephrase)), $(findstring everything,$*)),,--gpt3-rephrase) ; \
 	else \
 		cp $*.tsv $*-ned.tsv ; \

@@ -35,6 +35,7 @@ ned ?=
 synthetic_ned ?= azure
 gpt3_rephrase ?= false # requires OPENAI_API_KEY
 openai_api_key ?= ${OPENAI_API_KEY}
+azure_entity_linker_key = ${AZURE_ENTITY_LINKER_KEY}
 
 pruning_size ?= 5
 maxdepth ?= 8
@@ -207,6 +208,7 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 %-ned.tsv: %.tsv
 	if [[ -n "$(ned)" ]] ; then \
 		export OPENAI_API_KEY=$(openai_api_key) ; \
+		export AZURE_ENTITY_LINKER_KEY=$(azure_entity_linker_key) ; \
 		node $(qalddir)/dist/lib/ner/index.js \
 			-i $*.tsv \
 			-o $*-ned.tsv \

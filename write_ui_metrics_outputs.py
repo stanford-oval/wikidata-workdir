@@ -9,7 +9,7 @@ def write_ui_metadata(nlu_results):
       "source": nlu_results,
       "format": 'csv',
       "type": "table",
-      "header": ["Eval Set", "Device", "Example Count", "Accuracy", "W/o params", "Function", "Device", "Num Function", "Syntax"]
+      "header": ["Eval Set", "Device", "Example Count", "Accuracy", "W/o params", "Function", "Device", "Num Function", "Syntax", "NED"]
     },
   ]} 
   with open('/tmp/mlpipeline-ui-metadata.json', 'w') as f:

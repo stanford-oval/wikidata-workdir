@@ -259,6 +259,7 @@ $(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.
 			--include-entity-value \
 			--exclude-entity-display \
 			--ignore-entity-type \
+			--ned \
 			-o $@.tmp | tee $(eval_set)/$*.debug; \
 		mv $@.tmp $@ ; \
 	else \

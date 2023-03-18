@@ -206,6 +206,10 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 
 # append ned information
 %-ned.tsv: %.tsv
+	if [[ "$(ned)" == "refined" || "$(ned)" == "ensemble" || "$(synthetic_ned)" == "refined" || "$(synthetic_ned)" == "ensemble" ]] ; then \
+		python $(qalddir)/python/load_refined_model.py ; \
+	fi
+
 	if [[ -n "$(ned)" ]] ; then \
 		export OPENAI_API_KEY=$(openai_api_key) ; \
 		export AZURE_ENTITY_LINKER_KEY=$(azure_entity_linker_key) ; \

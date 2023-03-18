@@ -207,6 +207,7 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 # append ned information
 %-ned.tsv: %.tsv
 	if [[ "$(ned)" == "refined" || "$(ned)" == "ensemble" || "$(synthetic_ned)" == "refined" || "$(synthetic_ned)" == "ensemble" ]] ; then \
+		pip install https://github.com/amazon-science/ReFinED/archive/refs/tags/V1.zip ; \
 		python $(qalddir)/python/load_refined_model.py ; \
 	fi
 

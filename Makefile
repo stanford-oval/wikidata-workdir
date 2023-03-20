@@ -13,7 +13,7 @@ genie = node --experimental_worker --max_old_space_size=$(memsize) $(geniedir)/d
 
 owner ?= silei
 project = qald
-experiment ?= qald7
+experiment ?= webq
 domains ?= all
 qald_version ?= main
 dataset_file = emptydataset.tt

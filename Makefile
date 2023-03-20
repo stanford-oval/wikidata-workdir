@@ -31,8 +31,8 @@ synthetic_flags ?= \
 	wikidata 
 generate_flags = $(foreach v,$(synthetic_flags),--set-flag $(v))
 normalization_options ?= --normalize-domains id-filtered-only --normalize-entity-types
-ned ?= 
-synthetic_ned ?= azure
+ned ?= oracle
+synthetic_ned ?= oracle
 gpt3_rephrase ?= false # requires OPENAI_API_KEY
 openai_api_key ?= ${OPENAI_API_KEY}
 azure_entity_linker_key = ${AZURE_ENTITY_LINKER_KEY}

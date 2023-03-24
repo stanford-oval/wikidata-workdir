@@ -11,6 +11,8 @@ eval-synthetic
 test-synthetic
 datadir
 models
+datasets
+results
 
 manifest.tt
 emptydataset.tt

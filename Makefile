@@ -277,6 +277,7 @@ $(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.
 			--direction from-thingtalk \
 			-i predictions-thingtalk.tsv \
 			--cache $(wikidata_cache) \
+			--save-cache \
 			--bootleg-db $(bootleg) \
 			-o gold-sparql.tsv \
 			--manifest manifest.tt \
@@ -288,6 +289,7 @@ $(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.
 			-i predictions-thingtalk.tsv \
 			-o predictions-sparql.tsv \
 			--cache $(wikidata_cache) \
+			--save-cache \
 			--bootleg-db $(bootleg) \
 			--prediction \
 			--manifest manifest.tt \

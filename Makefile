@@ -155,11 +155,12 @@ augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 		--save-cache \
 		-d $*-convertion-dropped.tsv \
 		-o $@.tmp \
-		$(if $(findstring fewshot,$*),,--exclude-entity-display --include-entity-value)
+		--include-entity-value \
+		$(if $(findstring fewshot,$*),,--exclude-entity-display)
 	node $(qalddir)/dist/lib/post-processor.js \
 		--thingpedia manifest.tt \
 		--include-entity-value \
-		--exclude-entity-display \
+		$(if $(findstring fewshot,$*),,--exclude-entity-display) \
 		--bootleg-db $(bootleg) \
 		--cache $(wikidata_cache) \
 		$(normalization_options) \
@@ -170,7 +171,7 @@ augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 		--dropped $*-typecheck-dropped.tsv \
 		--thingpedia manifest.tt \
 		--include-entity-value \
-		--exclude-entity-display 
+		$(if $(findstring fewshot,$*),,--exclude-entity-display)
 	rm $@.tmp*
 
 # prepare converted fewshot data

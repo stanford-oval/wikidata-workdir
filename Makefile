@@ -36,6 +36,7 @@ synthetic_ned ?= oracle
 gpt3_rephrase ?= false # requires OPENAI_API_KEY
 openai_api_key ?= ${OPENAI_API_KEY}
 azure_entity_linker_key = ${AZURE_ENTITY_LINKER_KEY}
+abstract_property ?= true
 
 pruning_size ?= 5
 maxdepth ?= 8
@@ -156,7 +157,8 @@ augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 		-d $*-convertion-dropped.tsv \
 		-o $@.tmp \
 		--include-entity-value \
-		$(if $(findstring fewshot,$*),,--exclude-entity-display)
+		$(if $(findstring fewshot,$*),,--exclude-entity-display) \
+		$(if $(findstring true,$(abstract_property)),,--no-property-abstraction)
 	node $(qalddir)/dist/lib/post-processor.js \
 		--thingpedia manifest.tt \
 		--include-entity-value \
@@ -284,7 +286,8 @@ $(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.
 			--manifest manifest.tt \
 			--domains parameter-datasets/domain.json \
 			--include-entity-value \
-			--exclude-entity-display ;\
+			--exclude-entity-display \
+			$(if $(findstring true,$(abstract_property)),,--no-property-abstraction);\
 		node $(qalddir)/dist/lib/converter/index.js \
 			--direction from-thingtalk \
 			-i predictions-thingtalk.tsv \
@@ -296,7 +299,8 @@ $(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.
 			--manifest manifest.tt \
 			--domains parameter-datasets/domain.json \
 			--include-entity-value \
-			--exclude-entity-display ;\
+			--exclude-entity-display 
+			$(if $(findstring true,$(abstract_property)),,--no-property-abstraction) ;\
 		node $(qalddir)/dist/lib/evaluate.js \
 			--from-thingtalk \
 			--cache $(wikidata_cache) \

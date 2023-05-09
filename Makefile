@@ -299,7 +299,7 @@ $(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.
 			--manifest manifest.tt \
 			--domains parameter-datasets/domain.json \
 			--include-entity-value \
-			--exclude-entity-display 
+			--exclude-entity-display \
 			$(if $(findstring true,$(abstract_property)),,--no-property-abstraction) ;\
 		node $(qalddir)/dist/lib/evaluate.js \
 			--from-thingtalk \

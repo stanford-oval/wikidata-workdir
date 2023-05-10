@@ -33,6 +33,7 @@ generate_flags = $(foreach v,$(synthetic_flags),--set-flag $(v))
 normalization_options ?= --normalize-domains id-filtered-only --normalize-entity-types
 ned ?= oracle
 synthetic_ned ?= oracle
+refined_model ?= questions_model
 gpt3_rephrase ?= false # requires OPENAI_API_KEY
 openai_api_key ?= ${OPENAI_API_KEY}
 azure_entity_linker_key = ${AZURE_ENTITY_LINKER_KEY}
@@ -65,6 +66,17 @@ $(wikidata_cache):
 
 $(bootleg):
 	curl https://almond-static.stanford.edu/research/qald/bootleg.sqlite -o $@
+
+models/refined:
+	pip install https://github.com/amazon-science/ReFinED/archive/refs/tags/V1.zip 
+	mkdir -p $@
+	if [[ "$(refined_model)" == "questions_model" ]] ; then \
+		python $(qalddir)/python/load_refined_model.py ; \
+	else \
+		curl https://almond-static.stanford.edu/research/qald/refined-finetune/config.json -o $@/config.json ; \
+		curl https://almond-static.stanford.edu/research/qald/refined-finetune/model.pt -o $@/model.pt ; \
+		curl https://almond-static.stanford.edu/research/qald/refined-finetune/precomputed_entity_descriptions_emb_wikidata_33831487-300.np -o $@/precomputed_entity_descriptions_emb_wikidata_33831487-300.np ; \
+	fi
 
 emptydataset.tt:
 	echo 'dataset @empty {}' > $@
@@ -208,12 +220,7 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 	cat $^ > $@
 
 # append ned information
-%-ned.tsv: %.tsv
-	if [[ "$(ned)" == "refined" || "$(ned)" == "ensemble" || "$(synthetic_ned)" == "refined" || "$(synthetic_ned)" == "ensemble" ]] ; then \
-		pip install https://github.com/amazon-science/ReFinED/archive/refs/tags/V1.zip ; \
-		python $(qalddir)/python/load_refined_model.py ; \
-	fi
-
+%-ned.tsv: %.tsv $(if $(or $(findstring refined,$(ned)$(synthetic_ned)), $(findstring ensemble,$(ned)$(synthetic_ned))),models/refined,)
 	if [[ -n "$(ned)" ]] ; then \
 		export OPENAI_API_KEY=$(openai_api_key) ; \
 		export AZURE_ENTITY_LINKER_KEY=$(azure_entity_linker_key) ; \
@@ -223,6 +230,7 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 			--wikidata-cache $(wikidata_cache) \
 			--bootleg $(bootleg) \
 			--module $(if $(findstring everything,$*),$(synthetic_ned),$(ned)) \
+			--refined-model $(if $(findstring questions_model,$(refined_model)),$(refined_model),$(realpath $(refined_model))) \
 			$(if $(findstring everything,$*),--is-synthetic,) \
 			$(if $(or $(findstring false,$(gpt3_rephrase)), $(findstring everything,$*)),,--gpt3-rephrase) ; \
 	else \

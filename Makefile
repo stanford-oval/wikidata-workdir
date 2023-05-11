@@ -138,7 +138,6 @@ augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 		--debug \
 		--no-requotable \
 		--include-entity-value \
-		--exclude-entity-display \
 		--skip-errors \
 		$*.tsv
 	node $(qalddir)/dist/lib/post-processor.js \
@@ -154,8 +153,7 @@ augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 		-o $@ \
 		--dropped $*-augment-dropped.tsv \
 		--thingpedia manifest.tt \
-		--include-entity-value \
-		--exclude-entity-display 
+		--include-entity-value 
 	rm $@.tmp*
 
 # convert raw data into thingtalk
@@ -169,12 +167,10 @@ augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 		-d $*-convertion-dropped.tsv \
 		-o $@.tmp \
 		--include-entity-value \
-		$(if $(findstring fewshot,$*),,--exclude-entity-display) \
 		$(if $(findstring true,$(abstract_property)),,--no-property-abstraction)
 	node $(qalddir)/dist/lib/post-processor.js \
 		--thingpedia manifest.tt \
 		--include-entity-value \
-		$(if $(findstring fewshot,$*),,--exclude-entity-display) \
 		--bootleg-db $(bootleg) \
 		--cache $(wikidata_cache) \
 		$(normalization_options) \
@@ -184,8 +180,7 @@ augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 		-o $@ \
 		--dropped $*-typecheck-dropped.tsv \
 		--thingpedia manifest.tt \
-		--include-entity-value \
-		$(if $(findstring fewshot,$*),,--exclude-entity-display)
+		--include-entity-value 
 	rm $@.tmp*
 
 # prepare converted fewshot data
@@ -231,6 +226,9 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 			--bootleg $(bootleg) \
 			--module $(if $(findstring everything,$*),$(synthetic_ned),$(ned)) \
 			--refined-model $(if $(findstring questions_model,$(refined_model)),$(refined_model),$(realpath $(refined_model))) \
+			--include-entity-value \
+			--exclude-entity-display \
+			--entity-recovery-mode \
 			$(if $(findstring everything,$*),--is-synthetic,) \
 			$(if $(or $(findstring false,$(gpt3_rephrase)), $(findstring everything,$*)),,--gpt3-rephrase) ; \
 	else \

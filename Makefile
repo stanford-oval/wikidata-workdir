@@ -143,7 +143,6 @@ augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 	node $(qalddir)/dist/lib/post-processor.js \
 		--thingpedia manifest.tt \
 		--include-entity-value \
-		--exclude-entity-display \
 		--bootleg-db $(bootleg) \
 		--cache $(wikidata_cache) \
 		$(normalization_options) \

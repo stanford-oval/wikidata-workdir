@@ -34,6 +34,7 @@ normalization_options ?= --normalize-domains id-filtered-only --normalize-entity
 ned ?= oracle
 synthetic_ned ?= oracle
 refined_model ?= questions_model
+entity_recovery_mode ?= false
 gpt3_rephrase ?= false # requires OPENAI_API_KEY
 openai_api_key ?= ${OPENAI_API_KEY}
 azure_entity_linker_key = ${AZURE_ENTITY_LINKER_KEY}
@@ -227,7 +228,7 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 			--refined-model $(if $(findstring questions_model,$(refined_model)),$(refined_model),$(realpath $(refined_model))) \
 			--include-entity-value \
 			--exclude-entity-display \
-			--entity-recovery-mode \
+			$(if $(findstring true,$(entity_recovery_mode)),--entity-recovery-mode,) \
 			$(if $(findstring everything,$*),--is-synthetic,) \
 			$(if $(or $(findstring false,$(gpt3_rephrase)), $(findstring everything,$*)),,--gpt3-rephrase) ; \
 	else \

@@ -269,20 +269,20 @@ $(eval_set)/annotated-oracle.tsv: $(eval_set)/annotated.tsv
 		--include-entity-value \
 		--exclude-entity-display 
 
-predictions-thingtalk.tsv: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.tt
-	GENIENLP_NUM_BEAMS=$(beam_size) $(genie) predict $(eval_set)/annotated-ned.tsv 
-		--url "file://$(abspath $(dir $<))" 
+%-predictions.tsv: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.tt
+	GENIENLP_NUM_BEAMS=$(beam_size) $(genie) predict $(eval_set)/annotated-ned.tsv \
+		--url "file://$(abspath $(dir $<))" \
 		--debug \
 		--csv \
-		-o predictions-thingtalk.tsv | tee $(eval_set)/$*.debug;
+		-o $*-predictions.tsv | tee $(eval_set)/$*.debug
 
 # evaluation
-$(eval_set)/%.results: predictions-thingtalk.tsv manifest.tt $(eval_set)/annotated-oracle.tsv
+$(eval_set)/%.results: %-predictions.tsv manifest.tt $(eval_set)/annotated-oracle.tsv
 	mkdir -p $(eval_set)/$(dir $*)
 	if [[ "$(metric)" == "query" ]] ; then \
 		node $(qalddir)/dist/lib/evaluate-query.js \
 			--oracle $(eval_set)/annotated-oracle.tsv \
-			--prediction predictions-thingtalk.tsv \
+			--prediction $*-predictions.tsv \
 			--cache $(wikidata_cache) \
 			--save-cache \
 			--bootleg-db $(bootleg) \
@@ -290,11 +290,11 @@ $(eval_set)/%.results: predictions-thingtalk.tsv manifest.tt $(eval_set)/annotat
 	else \
 		node $(qalddir)/dist/lib/converter/index.js \
 			--direction from-thingtalk \
-			-i predictions-thingtalk.tsv \
+			-i $*-predictions.tsv \
 			--cache $(wikidata_cache) \
 			--save-cache \
 			--bootleg-db $(bootleg) \
-			-o gold-sparql.tsv \
+			-o $*-gold-sparql.tsv \
 			--manifest manifest.tt \
 			--domains parameter-datasets/domain.json \
 			--include-entity-value \
@@ -302,8 +302,8 @@ $(eval_set)/%.results: predictions-thingtalk.tsv manifest.tt $(eval_set)/annotat
 			$(if $(findstring true,$(abstract_property)),,--no-property-abstraction);\
 		node $(qalddir)/dist/lib/converter/index.js \
 			--direction from-thingtalk \
-			-i predictions-thingtalk.tsv \
-			-o predictions-sparql.tsv \
+			-i $*-predictions.tsv \
+			-o $*-prediction-sparql.tsv \
 			--cache $(wikidata_cache) \
 			--save-cache \
 			--bootleg-db $(bootleg) \
@@ -317,8 +317,8 @@ $(eval_set)/%.results: predictions-thingtalk.tsv manifest.tt $(eval_set)/annotat
 			--from-thingtalk \
 			--cache $(wikidata_cache) \
 			--bootleg-db $(bootleg) \
-			--dataset gold-sparql.tsv \
-			--prediction predictions-sparql.tsv > $@ ; \
+			--dataset $*-gold-sparql.tsv \
+			--prediction $*-prediction-sparql.tsv > $@ ; \
 	fi 
 
 evaluate: $(eval_set)/$(model).results

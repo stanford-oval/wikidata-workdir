@@ -259,29 +259,35 @@ models/%/best.pth:
 		azcopy sync --recursive --exclude-pattern "*/dataset/*;*/cache/*;iteration_*.pth;*_optim.pth" ${s3_bucket}/$(s3_model_dir) models/$*/ ; \
 	fi
 
+$(eval_set)/annotated-oracle.tsv: $(eval_set)/annotated.tsv
+	node $(qalddir)/dist/lib/ner/index.js \
+		-i $< \
+		-o $@ \
+		--wikidata-cache $(wikidata_cache) \
+		--bootleg $(bootleg) \
+		--module oracle \
+		--include-entity-value \
+		--exclude-entity-display 
+
+predictions-thingtalk.tsv: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.tt
+	GENIENLP_NUM_BEAMS=$(beam_size) $(genie) predict $(eval_set)/annotated-ned.tsv 
+		--url "file://$(abspath $(dir $<))" 
+		--debug \
+		--csv \
+		-o predictions-thingtalk.tsv | tee $(eval_set)/$*.debug;
+
 # evaluation
-$(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.tt 
+$(eval_set)/%.results: predictions-thingtalk.tsv manifest.tt $(eval_set)/annotated-oracle.tsv
 	mkdir -p $(eval_set)/$(dir $*)
 	if [[ "$(metric)" == "query" ]] ; then \
-		GENIENLP_NUM_BEAMS=$(beam_size) $(genie) evaluate-server $(eval_set)/annotated-ned.tsv \
-			--url "file://$(abspath $(dir $<))" \
-			--thingpedia manifest.tt \
-			--debug \
-			--csv-prefix $(eval_set) \
-			--csv $(evalflags) \
-			--min-complexity 1 --max-complexity 3 \
-			--include-entity-value \
-			--exclude-entity-display \
-			--ignore-entity-type \
-			--ned \
-			-o $@.tmp | tee $(eval_set)/$*.debug; \
-		mv $@.tmp $@ ; \
+		node $(qalddir)/dist/lib/evaluate-query.js \
+			--oracle $(eval_set)/annotated-oracle.tsv \
+			--prediction predictions-thingtalk.tsv \
+			--cache $(wikidata_cache) \
+			--save-cache \
+			--bootleg-db $(bootleg) \
+			-o $(eval_set)/$*.debug  > $@ ; \
 	else \
-		GENIENLP_NUM_BEAMS=$(beam_size) $(genie) predict $(eval_set)/annotated-ned.tsv \
-			--url "file://$(abspath $(dir $<))" \
-			--debug \
-			--csv \
-			-o predictions-thingtalk.tsv | tee $(eval_set)/$*.debug; \
 		node $(qalddir)/dist/lib/converter/index.js \
 			--direction from-thingtalk \
 			-i predictions-thingtalk.tsv \

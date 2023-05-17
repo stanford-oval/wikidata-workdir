@@ -333,9 +333,6 @@ evaluate-output-artifacts:
 	done
 	echo $(genie_k8s_owner)/workdir/$(genie_k8s_project)/$(eval_set)/$(if $(findstring /,$(model)),$(dir $(model)),)$(artifacts_ver)/ > $(s3_metrics_output)
 	cp -r $(eval_set)/$(model)* $(metrics_output)
-	if [[ "$(metric)" == "query" ]] ; then \
-		python3 write_ui_metrics_outputs.py $(eval_set)/$(model).results ; \
-	fi 
 
 # clean up data generated, but keeps manifest
 clean-data:

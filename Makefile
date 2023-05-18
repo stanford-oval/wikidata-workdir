@@ -269,20 +269,20 @@ $(eval_set)/annotated-oracle.tsv: $(eval_set)/annotated.tsv
 		--include-entity-value \
 		--exclude-entity-display 
 
-%-predictions.tsv: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.tt
+$(eval_set)/%-predictions.tsv: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.tt
 	GENIENLP_NUM_BEAMS=$(beam_size) $(genie) predict $(eval_set)/annotated-ned.tsv \
 		--url "file://$(abspath $(dir $<))" \
 		--debug \
 		--csv \
-		-o $*-predictions.tsv | tee $(eval_set)/$*.debug
+		-o $@ | tee $(eval_set)/$*.debug
 
 # evaluation
-$(eval_set)/%.results: %-predictions.tsv manifest.tt $(eval_set)/annotated-oracle.tsv
+$(eval_set)/%.results: $(eval_set)/%-predictions.tsv manifest.tt $(eval_set)/annotated-oracle.tsv
 	mkdir -p $(eval_set)/$(dir $*)
 	if [[ "$(metric)" == "query" ]] ; then \
 		node $(qalddir)/dist/lib/evaluate-query.js \
 			--oracle $(eval_set)/annotated-oracle.tsv \
-			--prediction $*-predictions.tsv \
+			--prediction $(eval_set)/$*-predictions.tsv \
 			--cache $(wikidata_cache) \
 			--save-cache \
 			--bootleg-db $(bootleg) \
@@ -290,7 +290,7 @@ $(eval_set)/%.results: %-predictions.tsv manifest.tt $(eval_set)/annotated-oracl
 	else \
 		node $(qalddir)/dist/lib/converter/index.js \
 			--direction from-thingtalk \
-			-i $*-predictions.tsv \
+			-i $(eval_set)/$*-predictions.tsv \
 			--cache $(wikidata_cache) \
 			--save-cache \
 			--bootleg-db $(bootleg) \
@@ -302,7 +302,7 @@ $(eval_set)/%.results: %-predictions.tsv manifest.tt $(eval_set)/annotated-oracl
 			$(if $(findstring true,$(abstract_property)),,--no-property-abstraction);\
 		node $(qalddir)/dist/lib/converter/index.js \
 			--direction from-thingtalk \
-			-i $*-predictions.tsv \
+			-i $(eval_set)/$*-predictions.tsv \
 			-o $*-prediction-sparql.tsv \
 			--cache $(wikidata_cache) \
 			--save-cache \

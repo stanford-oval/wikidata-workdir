@@ -270,6 +270,7 @@ $(eval_set)/annotated-oracle.tsv: $(eval_set)/annotated.tsv
 		--exclude-entity-display 
 
 $(eval_set)/%-predictions.tsv: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.tt
+	mkdir -p $(eval_set)/$(dir $*)
 	GENIENLP_NUM_BEAMS=$(beam_size) $(genie) predict $(eval_set)/annotated-ned.tsv \
 		--url "file://$(abspath $(dir $<))" \
 		--debug \

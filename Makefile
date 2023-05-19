@@ -295,7 +295,7 @@ $(eval_set)/%.results: $(eval_set)/%-predictions.tsv manifest.tt $(eval_set)/ann
 			--cache $(wikidata_cache) \
 			--save-cache \
 			--bootleg-db $(bootleg) \
-			-o $*-gold-sparql.tsv \
+			-o $(eval_set)/$*-gold-sparql.tsv \
 			--manifest manifest.tt \
 			--domains parameter-datasets/domain.json \
 			--include-entity-value \
@@ -304,7 +304,7 @@ $(eval_set)/%.results: $(eval_set)/%-predictions.tsv manifest.tt $(eval_set)/ann
 		node $(qalddir)/dist/lib/converter/index.js \
 			--direction from-thingtalk \
 			-i $(eval_set)/$*-predictions.tsv \
-			-o $*-prediction-sparql.tsv \
+			-o $(eval_set)/$*-prediction-sparql.tsv \
 			--cache $(wikidata_cache) \
 			--save-cache \
 			--bootleg-db $(bootleg) \
@@ -318,8 +318,8 @@ $(eval_set)/%.results: $(eval_set)/%-predictions.tsv manifest.tt $(eval_set)/ann
 			--from-thingtalk \
 			--cache $(wikidata_cache) \
 			--bootleg-db $(bootleg) \
-			--dataset $*-gold-sparql.tsv \
-			--prediction $*-prediction-sparql.tsv > $@ ; \
+			--dataset $(eval_set)/$*-gold-sparql.tsv \
+			--prediction $(eval_set)/$*-prediction-sparql.tsv > $@ ; \
 	fi 
 
 evaluate: $(eval_set)/$(model).results

@@ -219,6 +219,7 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 	if [[ -n "$(ned)" ]] ; then \
 		export OPENAI_API_KEY=$(openai_api_key) ; \
 		export AZURE_ENTITY_LINKER_KEY=$(azure_entity_linker_key) ; \
+		split -d -l 10000 $*.tsv $*.tsv-split ; \
 		node $(qalddir)/dist/lib/ner/index.js \
 			-i $*.tsv \
 			-o $*-ned.tsv \

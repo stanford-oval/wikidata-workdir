@@ -34,6 +34,7 @@ normalization_options ?= --normalize-domains id-filtered-only --normalize-entity
 ned ?= oracle
 synthetic_ned ?= oracle
 refined_model ?= questions_model
+entity_recovery_mode ?= false
 gpt3_rephrase ?= false # requires OPENAI_API_KEY
 openai_api_key ?= ${OPENAI_API_KEY}
 azure_entity_linker_key = ${AZURE_ENTITY_LINKER_KEY}
@@ -138,13 +139,11 @@ augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 		--debug \
 		--no-requotable \
 		--include-entity-value \
-		--exclude-entity-display \
 		--skip-errors \
 		$*.tsv
 	node $(qalddir)/dist/lib/post-processor.js \
 		--thingpedia manifest.tt \
 		--include-entity-value \
-		--exclude-entity-display \
 		--bootleg-db $(bootleg) \
 		--cache $(wikidata_cache) \
 		$(normalization_options) \
@@ -154,8 +153,7 @@ augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 		-o $@ \
 		--dropped $*-augment-dropped.tsv \
 		--thingpedia manifest.tt \
-		--include-entity-value \
-		--exclude-entity-display 
+		--include-entity-value 
 	rm $@.tmp*
 
 # convert raw data into thingtalk
@@ -169,12 +167,10 @@ augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 		-d $*-convertion-dropped.tsv \
 		-o $@.tmp \
 		--include-entity-value \
-		$(if $(findstring fewshot,$*),,--exclude-entity-display) \
 		$(if $(findstring true,$(abstract_property)),,--no-property-abstraction)
 	node $(qalddir)/dist/lib/post-processor.js \
 		--thingpedia manifest.tt \
 		--include-entity-value \
-		$(if $(findstring fewshot,$*),,--exclude-entity-display) \
 		--bootleg-db $(bootleg) \
 		--cache $(wikidata_cache) \
 		$(normalization_options) \
@@ -184,8 +180,7 @@ augmented-%.tsv: $(qalddir) manifest.tt %.tsv
 		-o $@ \
 		--dropped $*-typecheck-dropped.tsv \
 		--thingpedia manifest.tt \
-		--include-entity-value \
-		$(if $(findstring fewshot,$*),,--exclude-entity-display)
+		--include-entity-value 
 	rm $@.tmp*
 
 # prepare converted fewshot data
@@ -224,6 +219,7 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 	if [[ -n "$(ned)" ]] ; then \
 		export OPENAI_API_KEY=$(openai_api_key) ; \
 		export AZURE_ENTITY_LINKER_KEY=$(azure_entity_linker_key) ; \
+		split -d -l 10000 $*.tsv $*.tsv-split ; \
 		node $(qalddir)/dist/lib/ner/index.js \
 			-i $*.tsv \
 			-o $*-ned.tsv \
@@ -231,6 +227,9 @@ everything.tsv: $(if $(findstring true,$(fewshot)),augmented-fewshot.tsv,) $(if 
 			--bootleg $(bootleg) \
 			--module $(if $(findstring everything,$*),$(synthetic_ned),$(ned)) \
 			--refined-model $(if $(findstring questions_model,$(refined_model)),$(refined_model),$(realpath $(refined_model))) \
+			--include-entity-value \
+			--exclude-entity-display \
+			$(if $(findstring true,$(entity_recovery_mode)),--entity-recovery-mode,) \
 			$(if $(findstring everything,$*),--is-synthetic,) \
 			$(if $(or $(findstring false,$(gpt3_rephrase)), $(findstring everything,$*)),,--gpt3-rephrase) ; \
 	else \
@@ -261,36 +260,43 @@ models/%/best.pth:
 		azcopy sync --recursive --exclude-pattern "*/dataset/*;*/cache/*;iteration_*.pth;*_optim.pth" ${s3_bucket}/$(s3_model_dir) models/$*/ ; \
 	fi
 
+$(eval_set)/annotated-oracle.tsv: $(eval_set)/annotated.tsv
+	node $(qalddir)/dist/lib/ner/index.js \
+		-i $< \
+		-o $@ \
+		--wikidata-cache $(wikidata_cache) \
+		--bootleg $(bootleg) \
+		--module oracle \
+		--include-entity-value \
+		--exclude-entity-display 
+
+$(eval_set)/%-predictions.tsv: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.tt
+	mkdir -p $(eval_set)/$(dir $*)
+	GENIENLP_NUM_BEAMS=$(beam_size) $(genie) predict $(eval_set)/annotated-ned.tsv \
+		--url "file://$(abspath $(dir $<))" \
+		--debug \
+		--csv \
+		-o $@ | tee $(eval_set)/$*.debug
+
 # evaluation
-$(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.tt 
+$(eval_set)/%.results: $(eval_set)/%-predictions.tsv manifest.tt $(eval_set)/annotated-oracle.tsv
 	mkdir -p $(eval_set)/$(dir $*)
 	if [[ "$(metric)" == "query" ]] ; then \
-		GENIENLP_NUM_BEAMS=$(beam_size) $(genie) evaluate-server $(eval_set)/annotated-ned.tsv \
-			--url "file://$(abspath $(dir $<))" \
-			--thingpedia manifest.tt \
-			--debug \
-			--csv-prefix $(eval_set) \
-			--csv $(evalflags) \
-			--min-complexity 1 --max-complexity 3 \
-			--include-entity-value \
-			--exclude-entity-display \
-			--ignore-entity-type \
-			--ned \
-			-o $@.tmp | tee $(eval_set)/$*.debug; \
-		mv $@.tmp $@ ; \
-	else \
-		GENIENLP_NUM_BEAMS=$(beam_size) $(genie) predict $(eval_set)/annotated-ned.tsv \
-			--url "file://$(abspath $(dir $<))" \
-			--debug \
-			--csv \
-			-o predictions-thingtalk.tsv | tee $(eval_set)/$*.debug; \
-		node $(qalddir)/dist/lib/converter/index.js \
-			--direction from-thingtalk \
-			-i predictions-thingtalk.tsv \
+		node $(qalddir)/dist/lib/evaluate-query.js \
+			--oracle $(eval_set)/annotated-oracle.tsv \
+			--prediction $(eval_set)/$*-predictions.tsv \
 			--cache $(wikidata_cache) \
 			--save-cache \
 			--bootleg-db $(bootleg) \
-			-o gold-sparql.tsv \
+			-o $(eval_set)/$*.debug  > $@ ; \
+	else \
+		node $(qalddir)/dist/lib/converter/index.js \
+			--direction from-thingtalk \
+			-i $(eval_set)/$*-predictions.tsv \
+			--cache $(wikidata_cache) \
+			--save-cache \
+			--bootleg-db $(bootleg) \
+			-o $(eval_set)/$*-gold-sparql.tsv \
 			--manifest manifest.tt \
 			--domains parameter-datasets/domain.json \
 			--include-entity-value \
@@ -298,8 +304,8 @@ $(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.
 			$(if $(findstring true,$(abstract_property)),,--no-property-abstraction);\
 		node $(qalddir)/dist/lib/converter/index.js \
 			--direction from-thingtalk \
-			-i predictions-thingtalk.tsv \
-			-o predictions-sparql.tsv \
+			-i $(eval_set)/$*-predictions.tsv \
+			-o $(eval_set)/$*-prediction-sparql.tsv \
 			--cache $(wikidata_cache) \
 			--save-cache \
 			--bootleg-db $(bootleg) \
@@ -313,8 +319,8 @@ $(eval_set)/%.results: models/%/best.pth $(eval_set)/annotated-ned.tsv manifest.
 			--from-thingtalk \
 			--cache $(wikidata_cache) \
 			--bootleg-db $(bootleg) \
-			--dataset gold-sparql.tsv \
-			--prediction predictions-sparql.tsv > $@ ; \
+			--dataset $(eval_set)/$*-gold-sparql.tsv \
+			--prediction $(eval_set)/$*-prediction-sparql.tsv > $@ ; \
 	fi 
 
 evaluate: $(eval_set)/$(model).results
@@ -329,9 +335,6 @@ evaluate-output-artifacts:
 	done
 	echo $(genie_k8s_owner)/workdir/$(genie_k8s_project)/$(eval_set)/$(if $(findstring /,$(model)),$(dir $(model)),)$(artifacts_ver)/ > $(s3_metrics_output)
 	cp -r $(eval_set)/$(model)* $(metrics_output)
-	if [[ "$(metric)" == "query" ]] ; then \
-		python3 write_ui_metrics_outputs.py $(eval_set)/$(model).results ; \
-	fi 
 
 # clean up data generated, but keeps manifest
 clean-data:

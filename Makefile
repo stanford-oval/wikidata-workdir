@@ -336,6 +336,9 @@ evaluate-output-artifacts:
 	echo $(genie_k8s_owner)/workdir/$(genie_k8s_project)/$(eval_set)/$(if $(findstring /,$(model)),$(dir $(model)),)$(artifacts_ver)/ > $(s3_metrics_output)
 	cp -r $(eval_set)/$(model)* $(metrics_output)
 
+safe-clean:
+	rm -rf qald7 qald9 webq datadir synthetic* fewshot* augmented* everything* *.tmp* *-dropped.tsv eval/*.tsv test/*.tsv 
+
 # clean up data generated, but keeps manifest
 clean-data:
 	rm -rf qald7 qald9 webq

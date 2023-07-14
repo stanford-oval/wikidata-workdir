@@ -1,0 +1,21 @@
+The wikidata "human" domain has the property "place_of_death". It is also known as: shot place.
+
+Here is a question people may ask about the property, along with the SPARQL. Name the output variable to be `x` and use `SELECT DISTINCT` in SPARQL. Do not manufacture new properties.
+
+[
+    {
+        "query": "where did martin luther king jr get shot?",
+        "entities": [{"name": "Martin Luther King Jr.", "id": "Q8027"}],
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q8027 wdt:place_of_death ?x. }"
+    },
+]
+
+===
+
+The wikidata "{{ domain_name }}" domain has the property "{{ property_name }}". It is also known as: {{ alias }}.
+
+Here are {{ num_question }} questions people may ask about this property, along with the SPARQL. Name the output variable to be `x` and use `SELECT DISTINCT` in SPARQL. Do not manufacture new properties.
+
+[
+    {
+        "query": "

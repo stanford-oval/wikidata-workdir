@@ -1,0 +1,46 @@
+Here is one wikidata domain with associated entities:
+
+"restaurant": {
+    "id": "Q11707",
+    "properties": {
+        "cities": "P131",
+        "countries": "P17",
+        "official_website": "P856",
+        "coordinate_location": "P625",
+        "inception": "P571",
+        "architectural_styles": "P149",
+        "roads": "P669",
+        "award_received": "P166",
+        "owners": "P127",
+        "postal_code": "P281",
+        "cuisine": "P2012",
+        "maximum_capacity": "P1083",
+        "street_address": "P6375",
+        "industries": "P452",
+        "locations": "P276",
+        "heritage_designations": "P1435",
+        "headquarters_locations": "P159",
+        "point_in_time": "P585"
+    }
+},
+
+Generate one question that talks about these properties and the associated SPARQL. Use property names instead of PIDs.
+
+[
+    {
+        "query": "What are the names of the restaurants in London that have a maximum capacity of over 100 and serve Italian cuisine?",
+        "entities": [{"name": "London", "id": "Q84"}, {"name": "Italian cuisine", "id": "Q717"}]
+        "sparql": "SELECT ?restaurant WHERE { ?restaurant ps:instanceOf wd:restaurant; wdt:locations wd:Q84; wdt:cuisine wd:Q717; wdt:maximum_capacity ?capacity. FILTER(?capacity > 100)}"
+    }
+]
+
+===
+
+Here is one wikidata domain with associated entities:
+
+{{ domain_json }}
+
+Generate ten questions that talk about these properties and the associated SPARQL. Use property names instead of PIDs.
+
+[
+    {
